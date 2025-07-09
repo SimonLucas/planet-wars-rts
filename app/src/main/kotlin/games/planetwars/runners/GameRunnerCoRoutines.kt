@@ -109,7 +109,7 @@ fun main() {
     val agent1 = PureRandomAgent()
 //    val agent2 = games.planetwars.agents.BetterRandomAgent()
 //    val agent2 = SlowRandomAgent(delayMillis = 1000)
-    val agent2 = games.planetwars.agents.random.HeavyRandomAgent(delayMillis = 1000)
+    val agent2 = games.planetwars.agents.random.HeavyRandomAgent(delayMillis = 100)
     val gameRunner = GameRunnerCoRoutines(agent1, agent2, gameParams, timeoutMillis = 1)
     val finalModel = gameRunner.runGame()
     println("Game over!")

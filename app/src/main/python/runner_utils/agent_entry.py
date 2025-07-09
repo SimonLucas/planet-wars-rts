@@ -5,7 +5,7 @@ from typing import List, Optional
 class AgentEntry(BaseModel):
     id: str
     repo_url: str
-    # port: int
+    port: Optional[int] = None  # ← optional port number
     commit: Optional[str] = None  # ← optional commit hash
 
 

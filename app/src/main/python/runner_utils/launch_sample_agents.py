@@ -1,5 +1,5 @@
 from pathlib import Path
-from runner_utils.agent_entry import sample_entries
+from runner_utils.competition_entries import sample_entries
 from runner_utils.launch_agent import launch_agent
 
 if __name__ == "__main__":
