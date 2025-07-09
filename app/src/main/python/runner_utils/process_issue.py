@@ -181,31 +181,47 @@ def stop_and_cleanup_container(agent_id: str, github_token: str, issue_number: i
                      "✅ Evaluation complete. Stopping container.", github_token)
 
 
-def process_issue(issue: dict, base_dir: Path, github_token: str, timeout_seconds: int = 300):
+def process_issue(issue: dict, base_dir: Path, github_token: str, timeout_seconds: int = 300) -> bool:
     issue_number = issue["number"]
 
     # Step 1: Extract agent info
     agent = extract_and_normalize_agent_data(issue, github_token)
     if not agent:
-        return
+        close_issue("SimonLucas/planet-wars-rts-submissions", issue_number, github_token)
+        return False
 
     # Step 2: Clone and build repo
     comment_on_issue("SimonLucas/planet-wars-rts-submissions", issue_number,
                      f"🔍 Processing submission for `{agent.id}`", github_token)
     repo_dir = clone_and_build_repo(agent, base_dir, github_token, issue_number)
     if not repo_dir:
-        return
+        close_issue("SimonLucas/planet-wars-rts-submissions", issue_number, github_token)
+        return False
 
     # Step 3: Launch container
-    port = build_and_launch_container(agent, repo_dir, github_token, issue_number)
+    try:
+        port = build_and_launch_container(agent, repo_dir, github_token, issue_number)
+    except Exception as e:
+        comment_on_issue("SimonLucas/planet-wars-rts-submissions", issue_number,
+                         f"❌ Failed to build and launch container: {e}", github_token)
+        close_issue("SimonLucas/planet-wars-rts-submissions", issue_number, github_token)
+        return False
 
     # Step 4: Run evaluation
     success = run_evaluation(port, github_token, issue_number, timeout_seconds)
 
-    # Step 5: Report results
+    # Step 5: Report results if successful
     if success:
         post_results(github_token, issue_number)
 
     # Step 6: Cleanup
-    stop_and_cleanup_container(agent.id, github_token, issue_number)
+    try:
+        stop_and_cleanup_container(agent.id, github_token, issue_number)
+    except Exception as e:
+        comment_on_issue("SimonLucas/planet-wars-rts-submissions", issue_number,
+                         f"⚠️ Cleanup failed: {e}", github_token)
+
+    # Step 7: Close issue
     close_issue("SimonLucas/planet-wars-rts-submissions", issue_number, github_token)
+
+    return success
