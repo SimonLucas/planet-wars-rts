@@ -2,9 +2,10 @@ package games.planetwars.core
 
 import json_rmi.RemoteConstructable
 import kotlinx.serialization.Serializable
+import kotlin.random.Random
 
 @Serializable
-data class GameParams (
+data class GameParams(
     // spatial parameters
     val width: Int = 640,
     val height: Int = 480,

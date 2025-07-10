@@ -49,7 +49,7 @@ def shutdown_all_matching_containers(pattern: str = r'^container-'):
 
 # Optional command-line entry point
 if __name__ == "__main__":
-    from runner_utils.agent_entry import sample_entries
+    from runner_utils.competition_entries import sample_entries
 
     print("🔧 Choose shutdown mode:")
     print("1. Only sample entries")
