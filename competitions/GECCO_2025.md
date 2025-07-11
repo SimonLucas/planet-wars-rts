@@ -5,7 +5,7 @@ Run as a competition in conjunection with - [GECCO 2025](https://gecco-2025.sige
 
 ## Submission Deadline
 
-#### July 9, 2025, Anywhere on Earth.
+#### July 9, 2025, Anywhere on Earth (i.e. midnight UTC-12)
 
 We strongly recommend submitting your entry well before the deadline; non-functioning
 entries will not be accepted.
