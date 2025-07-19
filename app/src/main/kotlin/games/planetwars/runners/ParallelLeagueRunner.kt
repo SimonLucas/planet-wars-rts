@@ -3,10 +3,6 @@ import games.planetwars.agents.random.*
 import games.planetwars.agents.evo.SimpleEvoAgent
 import games.planetwars.agents.DoNothingAgent
 import games.planetwars.core.GameParams
-import games.planetwars.runners.LeagueEntry
-import games.planetwars.runners.LeagueWriter
-import games.planetwars.runners.LeagueResult
-import games.planetwars.runners.RoundRobinLeague
 import games.planetwars.agents.PlanetWarsAgent
 import kotlinx.coroutines.*
 

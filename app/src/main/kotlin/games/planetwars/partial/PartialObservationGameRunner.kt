@@ -1,4 +1,4 @@
-package games.planetwars.runners
+package games.planetwars.partial
 
 import games.planetwars.agents.PartialObservationAgent
 import games.planetwars.agents.random.PartialObservationBetterRandomAgent

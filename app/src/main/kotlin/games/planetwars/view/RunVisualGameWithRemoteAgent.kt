@@ -1,9 +1,7 @@
 package games.planetwars.view
 
 import games.planetwars.agents.RemoteAgent
-import games.planetwars.agents.random.BetterRandomAgent
 import games.planetwars.agents.random.CarefulRandomAgent
-import games.planetwars.agents.random.PureRandomAgent
 import games.planetwars.core.GameParams
 import games.planetwars.runners.GameRunner
 import games.planetwars.core.GameStateFactory

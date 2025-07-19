@@ -18,5 +18,10 @@ val customSerializersModule = SerializersModule {
         subclass(Planet::class, Planet.serializer())
         subclass(Transporter::class, Transporter.serializer())
         // Add more as needed
+        // 🆕 Add the partially observable data types:
+        subclass(Observation::class, Observation.serializer())
+        subclass(PlanetObservation::class, PlanetObservation.serializer())
+        subclass(TransporterObservation::class, TransporterObservation.serializer())
+
     }
 }

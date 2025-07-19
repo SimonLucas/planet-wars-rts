@@ -32,7 +32,7 @@ class JsonLogger(
 fun main() {
     val logger = JsonLogger(logFilePath = "log_data/test_log.jsonl", ignore = false)
     val agent1 = RemoteAgent(
-        className = "games.planetwars.agents.random.CarefulRandomAgent",
+        className = "competition_entry.CarefulRandomAgent",
         port = 8080,
         logger = logger)
     val agent2 = PureRandomAgent()

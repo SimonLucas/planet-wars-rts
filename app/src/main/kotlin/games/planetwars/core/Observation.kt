@@ -1,12 +1,16 @@
 package games.planetwars.core
 
+import json_rmi.RemoteConstructable
+import kotlinx.serialization.Serializable
+
 import util.Vec2d
 
 // Data class to represent an Observation
+@Serializable
 data class Observation(
     val observedPlanets: List<PlanetObservation>,
     val gameTick: Int
-)
+) : RemoteConstructable
 
 // Class responsible for creating Observations from GameStates
 class ObservationFactory {
@@ -47,6 +51,7 @@ class ObservationFactory {
     }
 }
 
+@Serializable
 data class PlanetObservation(
     val owner: Player,
     val nShips: Double?, // Nullable to indicate hidden information
@@ -55,8 +60,9 @@ data class PlanetObservation(
     val radius: Double,
     val transporter: TransporterObservation?,
     val id: Int
-)
+): RemoteConstructable
 
+@Serializable
 data class TransporterObservation(
     val s: Vec2d,
     val v: Vec2d,
@@ -64,7 +70,7 @@ data class TransporterObservation(
     val sourceIndex: Int,
     val destinationIndex: Int,
     val nShips: Double?
-)
+): RemoteConstructable
 
 fun main() {
     val planet1 = Planet(

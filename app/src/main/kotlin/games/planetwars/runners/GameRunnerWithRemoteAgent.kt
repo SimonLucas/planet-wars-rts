@@ -18,7 +18,7 @@ fun main() {
 //    val agent1 = DoNothingAgent()
 //    val agent1 = PureRandomAgent()
     val agent1 = GreedyHeuristicAgent()
-    val agent2 = RemoteAgent("<specified by remote server>", port = 9003)
+    val agent2 = RemoteAgent("<specified by remote server>", port = 9006)
     val gameRunner = GameRunnerCoRoutines(agent1, agent2, gameParams, timeoutMillis = 10)
     val finalModel = gameRunner.runGame()
     println("Game over!")

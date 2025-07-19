@@ -1,6 +1,5 @@
 package competition_entry
 
-import games.planetwars.agents.random.CarefulRandomAgent
 import json_rmi.GameAgentServer
 
 fun main() {

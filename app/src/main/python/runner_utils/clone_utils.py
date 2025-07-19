@@ -3,6 +3,7 @@ from typing import Optional
 from urllib.parse import urlparse, urlunparse, quote
 import subprocess
 import shutil
+import time
 
 from runner_utils.agent_entry import AgentEntry
 from runner_utils.utils import run_command
@@ -28,14 +29,17 @@ def robust_clone_and_build(agent: AgentEntry, base_dir: Path, github_token: str)
     authenticated_netloc = f"{quote(github_token)}@{parsed.netloc}"
     authenticated_url = str(urlunparse(parsed._replace(netloc=authenticated_netloc)))
 
-    def do_clone() -> bool:
-        try:
-            run_command(["git", "clone", authenticated_url, str(repo_dir)])
-            print(f"📦 Cloned {agent.repo_url} into {repo_dir}")
-            return True
-        except subprocess.CalledProcessError as e:
-            print(f"❌ Clone failed for {agent.id}: {e}")
-            return False
+    def do_clone(retries: int = 2) -> bool:
+        for attempt in range(retries):
+            try:
+                run_command(["git", "clone", authenticated_url, str(repo_dir)])
+                print(f"📦 Cloned {agent.repo_url} into {repo_dir}")
+                return True
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Clone failed for {agent.id} (attempt {attempt + 1}): {e}")
+                if attempt < retries - 1:
+                    time.sleep(1.5)  # brief delay before retry
+        return False
 
     # Clone if needed
     if not repo_dir.exists():
