@@ -36,7 +36,7 @@ So far it has been accepted to
 run in conjunction with the following conferences:
 
 - [GECCO 2025 Competition Specifics](competitions/GECCO_2025.md) (Deadline July 9, 2025)
--- [Results now available](competitions/gecco_2025_results.md)
+-- [Results now available](competitions/GECCO_2025_Results.md)
 - [IEEE Conference on Games 2025](https://cog2025.inesc-id.pt/competitions/)
 -- Specifics TBA, Deadline August TBA, 2025.
   
