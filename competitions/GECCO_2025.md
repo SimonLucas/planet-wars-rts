@@ -1,7 +1,8 @@
 # GECCO 2025 Specifics
 
-Run as a competition in conjunection with - [GECCO 2025](https://gecco-2025.sigevo.org/Competition?itemId=5108)
+Run as a competition in conjunction with - [GECCO 2025](https://gecco-2025.sigevo.org/Competition?itemId=5108)
 
+## This Compeitition is now closed: see the [GECCO 2025 Results](GECCO_2025_Results.md) page.
 
 ## Submission Deadline
 
