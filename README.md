@@ -38,7 +38,7 @@ run in conjunction with the following conferences:
 - [GECCO 2025 Competition Specifics](competitions/GECCO_2025.md) (Deadline July 9, 2025)
 -- [Results now available](competitions/GECCO_2025_Results.md)
 - [IEEE Conference on Games 2025](https://cog2025.inesc-id.pt/competitions/)
--- Specifics TBA, Deadline August TBA, 2025.
+-- Specifics: Coming soon!, Deadline August 27, 2025.
   
   
 Figures below show a fully observable and a partially observable game in play.
