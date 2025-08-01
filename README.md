@@ -38,7 +38,7 @@ run in conjunction with the following conferences:
 - [GECCO 2025 Competition Specifics](competitions/GECCO_2025.md) (Deadline July 9, 2025)
 -- [Results now available](competitions/GECCO_2025_Results.md)
 - [IEEE Conference on Games 2025](https://cog2025.inesc-id.pt/competitions/)
--- Specifics: Coming soon!, Deadline August 27, 2025.
+-- Specifics: [See here](competitions/IEEE_CoG_2025.md) Deadline August 27, 2025.
   
   
 Figures below show a fully observable and a partially observable game in play.
@@ -54,9 +54,10 @@ Figures below show a fully observable and a partially observable game in play.
 Planet Wars is an RTS game where players 
 aim to gain control of planets and destroy enemy units.
 
-We aim to provide a framework for developing and testing AI 
+We provide a framework for developing and testing AI 
 agents in a fast and flexible way.  The challenge is open-ended
-as the game parameters can be varied to create a range of challenges.
+as the game parameters can be varied to create a range of 
+different game scenarios. Can your bots handle such variation?
 Even the simpler versions still have the difficulty of
 dealing with the simultaneous move nature of the game
 and unpredictable opponent actions.
