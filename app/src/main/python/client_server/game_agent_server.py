@@ -56,7 +56,7 @@ class GameServerAgent:
                     raise ValueError(f"Unknown request type: {request.requestType}")
 
                 response = RemoteInvocationResponse(status="ok", result=result)
-                print(f"Sending response: {response}")
+                # print(f"Sending response: {response}")
 
             except Exception as e:
                 print(f"Error handling message: {e}")
