@@ -33,7 +33,7 @@ def run_agent_server(port: int):
 
 
 def evaluate_python_agent(agent_class: Type, port: int = 49875) -> Tuple[str, float]:
-    # Launch the Python agent server in a separate process
+    # Launch the Python agent server in a separate process, return the league markdown and average win rate
     process = multiprocessing.Process(target=run_agent_server, args=(port,), daemon=True)
     process.start()
 
@@ -80,5 +80,6 @@ if __name__ == "__main__":
     end_time = time.time()
     print(f"Total evaluation time: {end_time - start_time:.2f} seconds")
 
+    # Save the results to a markdown file if needed
     # with open("results/sample/evaluation_output.md", "w") as f:
     #     f.write(markdown)
