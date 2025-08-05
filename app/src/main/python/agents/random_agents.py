@@ -5,6 +5,27 @@ from agents.planet_wars_agent import PlanetWarsPlayer
 from core.game_state import GameState, Action, Player, GameParams
 from core.game_state_factory import GameStateFactory
 
+class PureRandomAgent(PlanetWarsPlayer):
+    """
+    really pure random: pick source and destination planets randomly freom ALL planets
+    """
+    def get_action(self, game_state: GameState) -> Action:
+        # Filter planets owned by the player
+        source_id = random.randint(0, len(game_state.planets) - 1)
+        target_id = random.randint(0, len(game_state.planets) - 1)
+
+        source = game_state.planets[source_id]
+        n_ships = source.n_ships / 2
+
+        return Action(
+            player_id=self.player,
+            source_planet_id=source_id,
+            destination_planet_id=target_id,
+            num_ships=n_ships
+        )
+
+    def get_agent_type(self) -> str:
+        return "Pure Random Agent"
 
 class CarefulRandomAgent(PlanetWarsPlayer):
     def get_action(self, game_state: GameState) -> Action:
