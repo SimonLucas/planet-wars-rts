@@ -55,6 +55,7 @@ if __name__ == "__main__":
     # time how long it takes to run the evaluation
     import time
     start_time = time.time()
+
     win_rate = fast_agent_eval(test_agent, n_games=10)
     print(f"\nFinal average win rate: {win_rate:.3f}")
     end_time = time.time()
