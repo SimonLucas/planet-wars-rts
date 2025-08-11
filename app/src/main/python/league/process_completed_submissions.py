@@ -17,13 +17,13 @@ from runner_utils.utils import (
     parse_yaml_from_issue_body,
     comment_on_issue,
 )
-from league_schema import Base, Agent, AgentInstance, Rating
+from league.league_schema import Base, Agent, AgentInstance, Rating
 from util.submission_evaluator_bot import load_github_token
 
 # Config
 REPO = "SimonLucas/planet-wars-rts-submissions"
 DB_PATH = get_default_db_path()
-SUBMISSION_DIR = Path.home() / "cog-runs" / "submissions"
+# SUBMISSION_DIR = Path.home() / "cog-runs" / "submissions"
 
 
 def run_command(cmd: List[str], cwd: Optional[Path] = None) -> str:
@@ -136,7 +136,7 @@ def register_in_db(agent: AgentCommitEntry, port: int, container_id: str, db_pat
 
 def main(limit: Optional[int] = None):
     github_token = load_github_token()
-    SUBMISSION_DIR.mkdir(parents=True, exist_ok=True)
+    # SUBMISSION_DIR.mkdir(parents=True, exist_ok=True)
 
     successful = extract_successful_issues(REPO, github_token, limit)
     print(f"📋 Found {len(successful)} successful submissions to process.")

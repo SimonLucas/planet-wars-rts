@@ -10,7 +10,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
 from league.init_db import get_default_db_path
-from league_schema import Base, Agent, AgentInstance
+from league.league_schema import Base, Agent, AgentInstance
 from runner_utils.agent_entry import AgentCommitEntry
 from runner_utils.utils import run_command, find_free_port
 from util.submission_evaluator_bot import load_github_token
