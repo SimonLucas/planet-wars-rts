@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Agents</h2>
+<form method="get" class="grid grid-cols-3">
+  <label>Search (name or owner)
+    <input type="text" name="q" value="{{ q or '' }}" placeholder="e.g. gnn">
+  </label>
+  <label>Agent ID
+    <input type="number" name="agent_id" value="{{ agent_id or '' }}">
+  </label>
+  <div style="align-self:end"><button type="submit">Search</button></div>
+</form>
+<table role="grid">
+  <thead><tr>
+    <th>ID</th><th>Name</th><th>Owner</th><th>Repo</th><th>Commit</th><th>Created</th>
+  </tr></thead>
+  <tbody>
+    {% for a in agents %}
+    <tr>
+      <td>{{ a.agent_id }}</td>
+      <td class="mono">{{ a.name }}</td>
+      <td>{{ a.owner }}</td>
+      <td class="mono"><a href="{{ a.repo_url }}" target="_blank">repo</a></td>
+      <td class="mono">{{ (a.commit or '')[:12] }}</td>
+      <td class="nowrap">{{ a.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if not agents %}<p class="muted">No agents match your query.</p>{% endif %}
+{% endblock %}

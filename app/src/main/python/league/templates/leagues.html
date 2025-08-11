@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Leagues</h2>
+<table role="grid">
+  <thead><tr>
+    <th>ID</th><th>Name</th><th>Description</th><th>Created</th>
+  </tr></thead>
+  <tbody>
+    {% for l in leagues %}
+    <tr>
+      <td>{{ l.league_id }}</td>
+      <td class="mono">{{ l.name }}</td>
+      <td>{{ l.description }}</td>
+      <td class="nowrap">{{ l.created_at.strftime('%Y-%m-%d %H:%M') }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if not leagues %}<p class="muted">No leagues yet.</p>{% endif %}
+{% endblock %}

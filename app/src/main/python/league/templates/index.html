@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>PlanetWars Web Inspector</h1>
+<p class="muted">Read-only browser for your SQLite-backed league database.</p>
+<div class="grid grid-cols-3">
+  <article>
+    <h3>Leaderboard</h3>
+    <p>Conservative score (mu − 3σ) per league.</p>
+    <a role="button" href="/leaderboard">View</a>
+  </article>
+  <article>
+    <h3>Agents</h3>
+    <p>Search by name/owner. Inspect repos and commits.</p>
+    <a role="button" href="/agents">Browse</a>
+  </article>
+  <article>
+    <h3>Matches</h3>
+    <p>Filter by league and agent, sort & paginate.</p>
+    <a role="button" href="/matches">Browse</a>
+  </article>
+</div>
+{% endblock %}

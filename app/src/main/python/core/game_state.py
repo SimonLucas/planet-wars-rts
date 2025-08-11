@@ -95,7 +95,6 @@ class Vec2d(CamelModel):
         return self * (1.0 / magnitude) if magnitude > 0 else self
 
 
-
 class Transporter(CamelModel):
     s: Vec2d
     v: Vec2d
@@ -163,7 +162,6 @@ Action.DO_NOTHING = Action(
     destination_planet_id=-1,
     num_ships=0.0
 )
-
 
 if __name__ == "__main__":
     # Example usage

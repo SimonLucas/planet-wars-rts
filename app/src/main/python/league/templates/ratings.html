@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Ratings</h2>
+<form method="get" class="grid grid-cols-3">
+  <label>League
+    <select name="league_id" onchange="this.form.submit()">
+      {% for lg in leagues %}
+      <option value="{{ lg.league_id }}" {% if lg.league_id == league_id %}selected{% endif %}>{{ lg.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <div style="align-self:end"><button type="submit">Apply</button></div>
+</form>
+<table role="grid">
+  <thead><tr>
+    <th>Agent</th><th>μ</th><th>σ</th><th>Updated</th>
+  </tr></thead>
+  <tbody>
+    {% for r in ratings %}
+    <tr>
+      <td class="mono">{{ r.agent.name if r.agent else r.agent_id }}</td>
+      <td>{{ '%.3f'|format(r.mu) }}</td>
+      <td>{{ '%.3f'|format(r.sigma) }}</td>
+      <td class="nowrap">{{ r.updated_at.strftime('%Y-%m-%d %H:%M') if r.updated_at else '' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if not ratings %}<p class="muted">No ratings found for this league.</p>{% endif %}
+{% endblock %}

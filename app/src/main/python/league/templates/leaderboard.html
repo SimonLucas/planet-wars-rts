@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Leaderboard</h2>
+<form method="get" class="grid grid-cols-3">
+  <label>League
+    <select name="league_id" onchange="this.form.submit()">
+      {% for lg in leagues %}
+      <option value="{{ lg.league_id }}" {% if lg.league_id == league_id %}selected{% endif %}>{{ lg.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Limit
+    <input type="number" name="limit" value="{{ limit }}" min="1">
+  </label>
+  <div style="align-self:end"><button type="submit">Apply</button></div>
+</form>
+<table role="grid">
+  <thead><tr>
+    <th>#</th><th>Agent</th><th>Owner</th><th>μ</th><th>σ</th><th class="nowrap">μ − 3σ</th><th>Updated</th>
+  </tr></thead>
+  <tbody>
+    {% for row in rows %}
+    <tr>
+      <td>{{ loop.index }}</td>
+      <td><a href="/agents?agent_id={{ row.agent_id }}">{{ row.name }}</a></td>
+      <td class="mono">{{ row.owner }}</td>
+      <td>{{ '%.3f'|format(row.mu) }}</td>
+      <td>{{ '%.3f'|format(row.sigma) }}</td>
+      <td>{{ '%.3f'|format(row.cs) }}</td>
+      <td class="nowrap">{{ row.updated_at.strftime('%Y-%m-%d %H:%M') if row.updated_at else '' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if not rows %}<p class="muted">No ratings found for this league.</p>{% endif %}
+{% endblock %}

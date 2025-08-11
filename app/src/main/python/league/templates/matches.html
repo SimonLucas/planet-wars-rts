@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Matches</h2>
+<form method="get" class="grid grid-cols-3">
+  <label>League
+    <select name="league_id" onchange="this.form.submit()">
+      <option value="">All</option>
+      {% for lg in leagues %}
+      <option value="{{ lg.league_id }}" {% if league_id and lg.league_id == league_id %}selected{% endif %}>{{ lg.name }}</option>
+      {% endfor %}
+    </select>
+  </label>
+  <label>Agent ID
+    <input type="number" name="agent_id" value="{{ agent_id or '' }}">
+  </label>
+  <label>Page Size
+    <input type="number" name="limit" value="{{ limit }}" min="5" max="200">
+  </label>
+  <label>Page
+    <input type="number" name="page" value="{{ page }}" min="1">
+  </label>
+  <div style="align-self:end"><button type="submit">Apply</button></div>
+</form>
+<table role="grid">
+  <thead><tr>
+    <th>ID</th><th>League</th><th>P1</th><th>P2</th><th>Winner</th><th>Seed</th><th>Map</th><th>Started</th><th>Finished</th>
+  </tr></thead>
+  <tbody>
+    {% for m in matches %}
+    <tr>
+      <td>{{ m.match_id }}</td>
+      <td>{{ m.league.name if m.league else m.league_id }}</td>
+      <td class="mono"><a href="/agents?agent_id={{ m.player1_id }}">{{ m.player1.name if m.player1 else m.player1_id }}</a></td>
+      <td class="mono"><a href="/agents?agent_id={{ m.player2_id }}">{{ m.player2.name if m.player2 else m.player2_id }}</a></td>
+      <td class="mono">{{ m.winner.name if m.winner else m.winner_id }}</td>
+      <td>{{ m.seed }}</td>
+      <td class="mono">{{ m.map_name }}</td>
+      <td class="nowrap">{{ m.started_at.strftime('%Y-%m-%d %H:%M') if m.started_at else '' }}</td>
+      <td class="nowrap">{{ m.finished_at.strftime('%Y-%m-%d %H:%M') if m.finished_at else '' }}</td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if not matches %}<p class="muted">No matches found.</p>{% endif %}
+{% endblock %}

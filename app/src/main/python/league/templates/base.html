@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{{ title or 'PlanetWars' }}</title>
+  <link rel="stylesheet" href="https://unpkg.com/@picocss/pico@2/css/pico.min.css">
+  <style>
+  .container { max-width: 1200px; }
+  table { font-size: 0.95rem; }
+  .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace; }
+  .nowrap { white-space: nowrap; }
+  .muted { opacity: .75; }
+  .grid { display: grid; gap: 1rem; }
+  .grid-cols-2 { grid-template-columns: 1fr 1fr; }
+  .grid-cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  </style>
+</head>
+<body>
+  <nav class="container">
+    <ul>
+      <li><strong><a href="/">PlanetWars DB</a></strong></li>
+    </ul>
+    <ul>
+      <li><a href="/leaderboard">Leaderboard</a></li>
+      <li><a href="/agents">Agents</a></li>
+      <li><a href="/matches">Matches</a></li>
+      <li><a href="/leagues">Leagues</a></li>
+      <li><a href="/ratings">Ratings</a></li>
+    </ul>
+  </nav>
+  <main class="container">
+    {% block content %}{% endblock %}
+  </main>
+</body>
+</html>

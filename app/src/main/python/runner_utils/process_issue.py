@@ -85,7 +85,10 @@ def clone_and_build_repo(agent: AgentEntry, base_dir: Path, github_token: str, i
     import shutil
 
     repo = "SimonLucas/planet-wars-rts-submissions"
-    repo_dir = base_dir / agent.id
+    short_commit = agent.commit[:7]
+    repo_dir = base_dir / f"{agent.id}-{short_commit}"
+
+    # repo_dir = base_dir / agent.id
     gradlew_path = repo_dir / "gradlew"
 
     # Remove broken clone dirs
@@ -120,8 +123,9 @@ def clone_and_build_repo(agent: AgentEntry, base_dir: Path, github_token: str, i
 
 
 def build_and_launch_container(agent: AgentEntry, repo_dir: Path, github_token: str, issue_number: int) -> int:
-    container_name = f"container-{agent.id}"
-    image_name = f"game-server-{agent.id}"
+    short_commit = agent.commit[:7]
+    container_name = f"container-{agent.id}-{short_commit}"
+    image_name = f"game-server-{agent.id}-{short_commit}"
 
     run_command(["podman", "build", "-t", image_name, "."], cwd=repo_dir)
 

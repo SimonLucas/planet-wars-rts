@@ -90,3 +90,12 @@ tasks.register<JavaExec>("runEvaluation") {
     classpath = sourceSets["main"].runtimeClasspath
     args = listOf(project.findProperty("args")?.toString() ?: "49875")
 }
+tasks.register<JavaExec>("runRemotePairEvaluation") {
+    // Kotlin entry point above
+    mainClass.set("games.planetwars.runners.RunRemotePairEvaluationKt")
+    classpath = sourceSets["main"].runtimeClasspath
+
+    // Support `--args=portA,portB,gpp,timeout` (comes in as a project property)
+    val raw = project.findProperty("args")?.toString()
+    args = if (raw != null) listOf(raw) else listOf("5001,5002,10,50")
+}
