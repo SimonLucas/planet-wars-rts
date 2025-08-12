@@ -1,0 +1,10 @@
+# ---- Core runtime deps ----
+SQLAlchemy>=2.0,<3.0      # DB models + SQLite
+trueskill>=0.4,<1.0       # rating updates
+GitPython>=3.1,<4.0       # clone/update student repos
+PyYAML>=6.0,<7.0          # parse issue YAML / config
+requests>=2.31,<3.0       # GitHub API calls, downloads
+websockets>=12,<14        # Python agent/server over WS
+pydantic>=2.6,<3.0        # JSON schemas for messages
+python-dotenv>=1.0,<2.0   # load GITHUB_TOKEN, etc. from .env
+
