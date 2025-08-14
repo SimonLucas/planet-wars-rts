@@ -552,4 +552,4 @@ def main(n_pairs: int = 1):
 
 
 if __name__ == "__main__":
-    main(1)
+    main(10)
