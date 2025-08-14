@@ -14,11 +14,12 @@ from sqlalchemy.orm import Session
 
 from league.init_db import get_default_db_path
 from league.league_schema import Agent, AgentInstance, Match
+from league.scheduler import choose_next_pair
 
 # ---------- config ----------
 DB_PATH = get_default_db_path()
 ENGINE = create_engine(DB_PATH)
-GAMES_PER_PAIR = 5
+GAMES_PER_PAIR = 10
 REMOTE_TIMEOUT = 50  # ms per remote RPC call
 
 # Podman robustness controls
@@ -35,6 +36,7 @@ MAX_RETRY_ON_WS_CLOSE = 1
 
 # Discovery assist
 PROBE_CANDIDATES = 6
+LEAGUE_ID = 1  # default league ID for remote pair runs
 
 # Quarantine/backoff when WS blows up
 WS_ERROR_BACKOFF_SECS = 60  # keep problematic agents out of the pool briefly
@@ -362,18 +364,80 @@ def list_active_agents(session: Session) -> List[Tuple[Agent, AgentInstance, boo
     return out
 
 
+# def pick_two_ready_or_probe(session: Session) -> Tuple[Tuple[Agent, AgentInstance], Tuple[Agent, AgentInstance]]:
+#     triples = list_active_agents(session)
+#     active = [(a, inst) for (a, inst, ok) in triples if ok]
+#     print(f"🔍 Found {len(active)} active agents")
+#
+#     if len(active) >= 2:
+#         return tuple(random.sample(active, 2))  # type: ignore[return-value]
+#
+#     # Not enough: probe a few random candidates to wake them up.
+#     rows = _rows_with_instances(session)
+#     random.shuffle(rows)
+#     print("🧪 Probing a few candidates to wake them (short heal)…")
+#     woken: List[Tuple[Agent, AgentInstance]] = []
+#     tried = 0
+#     for agent, inst in rows:
+#         if _is_quarantined(agent.agent_id):
+#             continue
+#         if tried >= PROBE_CANDIDATES or len(active) + len(woken) >= 4:
+#             break
+#         tried += 1
+#         ok, _, _ = ensure_ready(agent, inst, quick=True)
+#         if ok:
+#             woken.append((agent, inst))
+#
+#     active.extend(woken)
+#     print(f"🔎 Active after probe: {len(active)}")
+#     if len(active) < 2:
+#         raise RuntimeError("Not enough active agents to run a match")
+#     return tuple(random.sample(active, 2))  # type: ignore[return-value]
+#
+
 def pick_two_ready_or_probe(session: Session) -> Tuple[Tuple[Agent, AgentInstance], Tuple[Agent, AgentInstance]]:
+    """
+    Use adaptive scheduler to choose a pair; ensure they're (quick) ready; if not,
+    fall back to existing 'probe & random' strategy.
+    """
+    # Map agent_id -> (Agent, AgentInstance) for quick lookup
+    rows = _rows_with_instances(session)
+    id2row: Dict[int, Tuple[Agent, AgentInstance]] = {a.agent_id: (a, inst) for a, inst in rows}
+
+    # 1) Try policy-guided pair
+    chosen = choose_next_pair(session, league_id=LEAGUE_ID)  # returns (aid_a, aid_b) or None
+    if chosen:
+        aid_a, aid_b = chosen
+        pair_rows: List[Tuple[Agent, AgentInstance]] = []
+        for aid in (aid_a, aid_b):
+            row = id2row.get(aid)
+            if row is None:
+                # No running instance for this agent – bail to fallback
+                pair_rows = []
+                break
+            a, inst = row
+            if _is_quarantined(a.agent_id):
+                pair_rows = []
+                break
+            # Try to wake quickly
+            ok, _, _ = ensure_ready(a, inst, quick=True)
+            if not ok:
+                pair_rows = []
+                break
+            pair_rows.append((a, inst))
+
+        if len(pair_rows) == 2:
+            return pair_rows[0], pair_rows[1]
+
+    # 2) Fallback = your existing path (probe + random among active)
     triples = list_active_agents(session)
     active = [(a, inst) for (a, inst, ok) in triples if ok]
-    print(f"🔍 Found {len(active)} active agents")
-
     if len(active) >= 2:
         return tuple(random.sample(active, 2))  # type: ignore[return-value]
 
-    # Not enough: probe a few random candidates to wake them up.
+    # Probe a few to try to wake them (short heal), then random among active+woken
     rows = _rows_with_instances(session)
     random.shuffle(rows)
-    print("🧪 Probing a few candidates to wake them (short heal)…")
     woken: List[Tuple[Agent, AgentInstance]] = []
     tried = 0
     for agent, inst in rows:
@@ -387,7 +451,6 @@ def pick_two_ready_or_probe(session: Session) -> Tuple[Tuple[Agent, AgentInstanc
             woken.append((agent, inst))
 
     active.extend(woken)
-    print(f"🔎 Active after probe: {len(active)}")
     if len(active) < 2:
         raise RuntimeError("Not enough active agents to run a match")
     return tuple(random.sample(active, 2))  # type: ignore[return-value]
