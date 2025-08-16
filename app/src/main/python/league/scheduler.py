@@ -1,9 +1,9 @@
-# scheduler.py
 from __future__ import annotations
 import math
+import random
 from dataclasses import dataclass
 from datetime import datetime, timezone
-from typing import Dict, Iterable, Tuple, List
+from typing import Dict, Tuple, List
 
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
@@ -31,7 +31,7 @@ class AgentStat:
 
 def _match_quality(mu1: float, s1: float, mu2: float, s2: float, beta: float) -> float:
     c2 = 2 * (beta ** 2) + s1 * s1 + s2 * s2
-    if c2 <= 0:  # numerical guard
+    if c2 <= 0:
         return 0.0
     dmu = mu1 - mu2
     return math.exp(- (dmu * dmu) / (2.0 * c2))
@@ -41,13 +41,12 @@ def _now_utc() -> datetime:
 
 def _normalize_days(dt: datetime | None) -> float:
     if not dt:
-        return 1.0   # maximally stale if never played
+        return 1.0
     delta = _now_utc() - (dt if dt.tzinfo else dt.replace(tzinfo=timezone.utc))
-    # squashed to ~[0,1.5] for scheduling; adjust if you want stronger staleness
-    return min(delta.total_seconds() / (24*3600*7), 1.5)  # weeks → ~0..1.5
+    return min(delta.total_seconds() / (24*3600*7), 1.5)  # ~0..1.5 weeks
 
 def load_stats(session: Session, league_id: int) -> tuple[Dict[int, AgentStat], int, float]:
-    """Return per-agent stats, total decisive matches T, and league beta."""
+    """Return per-agent stats, total matches T, and league beta."""
     league = session.get(League, league_id)
     s = dict(league.settings or {})
     beta = float(s.get("beta", 25.0/6.0))
@@ -61,15 +60,15 @@ def load_stats(session: Session, league_id: int) -> tuple[Dict[int, AgentStat], 
     if not ratings:
         return {}, 0, beta
 
-    # games played per agent (only decisive)
+    # games played per agent (include all matches)
     gp_rows = (
         session.query(Match.player1_id.label("aid"), func.count().label("cnt"))
-        .filter(Match.league_id == league_id, Match.winner_id.isnot(None))
+        .filter(Match.league_id == league_id)
         .group_by(Match.player1_id)
         .all()
     ) + (
         session.query(Match.player2_id.label("aid"), func.count().label("cnt"))
-        .filter(Match.league_id == league_id, Match.winner_id.isnot(None))
+        .filter(Match.league_id == league_id)
         .group_by(Match.player2_id)
         .all()
     )
@@ -77,16 +76,16 @@ def load_stats(session: Session, league_id: int) -> tuple[Dict[int, AgentStat], 
     for aid, cnt in gp_rows:
         played[aid] = played.get(aid, 0) + int(cnt)
 
-    # last played per agent
+    # last played per agent (include all matches)
     last1 = (
         session.query(Match.player1_id.label("aid"), func.max(Match.finished_at))
-        .filter(Match.league_id == league_id, Match.winner_id.isnot(None))
+        .filter(Match.league_id == league_id)
         .group_by(Match.player1_id)
         .all()
     )
     last2 = (
         session.query(Match.player2_id.label("aid"), func.max(Match.finished_at))
-        .filter(Match.league_id == league_id, Match.winner_id.isnot(None))
+        .filter(Match.league_id == league_id)
         .group_by(Match.player2_id)
         .all()
     )
@@ -95,9 +94,9 @@ def load_stats(session: Session, league_id: int) -> tuple[Dict[int, AgentStat], 
         cur = last_played.get(aid)
         last_played[aid] = dt if (cur is None or (dt and dt > cur)) else cur
 
-    # total decisive matches
+    # total match count (include draws)
     T = session.query(func.count()).select_from(Match)\
-        .filter(Match.league_id == league_id, Match.winner_id.isnot(None)).scalar() or 0
+        .filter(Match.league_id == league_id).scalar() or 0
 
     stats: Dict[int, AgentStat] = {
         r.agent_id: AgentStat(
@@ -111,15 +110,15 @@ def load_stats(session: Session, league_id: int) -> tuple[Dict[int, AgentStat], 
     }
     return stats, int(T), beta
 
-def load_pair_counts(session: Session, league_id: int) -> Dict[tuple[int,int], int]:
-    """How often each unordered pair has met (decisive only)."""
+def load_pair_counts(session: Session, league_id: int) -> Dict[tuple[int, int], int]:
+    """How often each unordered pair has met (include draws)."""
     rows = (
         session.query(Match.player1_id, Match.player2_id, func.count().label("cnt"))
-        .filter(Match.league_id == league_id, Match.winner_id.isnot(None))
+        .filter(Match.league_id == league_id)
         .group_by(Match.player1_id, Match.player2_id)
         .all()
     )
-    pc: Dict[tuple[int,int], int] = {}
+    pc: Dict[tuple[int, int], int] = {}
     for a, b, c in rows:
         key = (a, b) if a < b else (b, a)
         pc[key] = pc.get(key, 0) + int(c)
@@ -133,7 +132,7 @@ def choose_next_pair(session: Session, league_id: int = 1) -> tuple[int, int] | 
 
     pair_counts = load_pair_counts(session, league_id)
 
-    # 1) Pick the focal agent i by UCB-ish priority
+    # 1) Pick focal agent i by priority
     def priority(s: AgentStat) -> float:
         ucb = math.sqrt(math.log(T + 1.0) / (s.played + 1.0))
         stale = _normalize_days(s.last_played)
@@ -142,8 +141,7 @@ def choose_next_pair(session: Session, league_id: int = 1) -> tuple[int, int] | 
     agents_sorted = sorted(stats.values(), key=priority, reverse=True)
     i: AgentStat = agents_sorted[0]
 
-    # Candidate opponents (optionally exploit top-K by μ)
-    import random
+    # 2) Choose candidate opponents
     all_candidates = [s for s in stats.values() if s.agent_id != i.agent_id]
     if random.random() < P_EXPLOIT:
         topk = sorted(all_candidates, key=lambda s: s.mu, reverse=True)[:min(TOP_K, len(all_candidates))]
@@ -151,7 +149,7 @@ def choose_next_pair(session: Session, league_id: int = 1) -> tuple[int, int] | 
     else:
         candidates = all_candidates
 
-    # 2) Score opponents for i
+    # 3) Score candidate j against i
     def pair_score(j: AgentStat) -> float:
         q = _match_quality(i.mu, i.sigma, j.mu, j.sigma, beta)
         repeats = pair_counts.get((min(i.agent_id, j.agent_id), max(i.agent_id, j.agent_id)), 0)
