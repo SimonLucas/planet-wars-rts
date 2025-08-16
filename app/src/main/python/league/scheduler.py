@@ -12,11 +12,12 @@ from league.league_schema import League, Match, Rating
 
 # ---- weights (sane defaults) ----
 W_SIGMA = 0.6      # how much we prioritize uncertain agents
-W_UCB   = 0.3      # underplayed boost
+W_UCB   = 1.0      # underplayed boost
 W_STALE = 0.1      # hasn't played in a while
 W_Q     = 0.7      # pair match quality
 W_SUMS  = 0.3      # (σ_i + σ_j) boost
 W_REPEAT= 0.2      # penalty for repeated pair
+W_MU = 0.5      # how much we prioritize high μ (rating)
 
 P_EXPLOIT = 0.25   # chance to restrict opponent search to top-K by μ
 TOP_K = 8
@@ -134,9 +135,10 @@ def choose_next_pair(session: Session, league_id: int = 1) -> tuple[int, int] | 
 
     # 1) Pick focal agent i by priority
     def priority(s: AgentStat) -> float:
+        # balance between exploitation - mean rating (mu) and exploration -
+        # more weight to those with fewer games played (played)
         ucb = math.sqrt(math.log(T + 1.0) / (s.played + 1.0))
-        stale = _normalize_days(s.last_played)
-        return W_SIGMA * s.sigma + W_UCB * ucb + W_STALE * stale
+        return W_MU * s.mu + W_UCB * ucb
 
     agents_sorted = sorted(stats.values(), key=priority, reverse=True)
     i: AgentStat = agents_sorted[0]
