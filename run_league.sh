@@ -9,7 +9,7 @@ for i in $(seq "$N"); do
   SECONDS=0
   python3 -m league.run_agents_from_db
   echo "Elapsed: ${SECONDS}s"
-  python -m league.league_ratings --league 1 --reset --order time
+  python -m league.league_ratings --reset --order time
   python -m league.export_leaderboard_md
   python -m league.commit_leaderboard_to_git
   python -m league.process_completed_submissions
