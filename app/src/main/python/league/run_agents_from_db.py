@@ -66,14 +66,59 @@ def sanitize_name(name: str) -> str:
     return name
 
 
+# def _run_podman(args: List[str], timeout: int) -> Tuple[int, str, str]:
+#     try:
+#         p = subprocess.run(["podman", *args], capture_output=True, text=True, timeout=timeout)
+#         return p.returncode, (p.stdout or "").strip(), (p.stderr or "").strip()
+#     except subprocess.TimeoutExpired:
+#         return 124, "", f"timeout after {timeout}s: podman {' '.join(args)}"
+#     except Exception as e:
+#         return 125, "", f"{type(e).__name__}: {e}"
+
+from typing import List, Tuple
+import subprocess
+
 def _run_podman(args: List[str], timeout: int) -> Tuple[int, str, str]:
+    """
+    Drop-in replacement that injects '--log-driver=none' for 'podman run'/'create'
+    to prevent container stdout/stderr from being forwarded to journald/syslog.
+
+    Returns: (returncode, stdout_stripped, stderr_stripped)
+    """
     try:
-        p = subprocess.run(["podman", *args], capture_output=True, text=True, timeout=timeout)
+        adj = list(args)
+
+        # Find the subcommand index ('run' or 'create')
+        sub_idx = None
+        for i, tok in enumerate(adj):
+            if tok in ("run", "create"):
+                sub_idx = i
+                break
+
+        # Only inject for run/create, and only if not already specified
+        if sub_idx is not None and "--log-driver" not in adj:
+            insert_pos = sub_idx + 1  # directly after 'run'/'create'
+            adj[insert_pos:insert_pos] = ["--log-driver", "none"]
+            # If you prefer rotated file logs instead, replace the line above with:
+            # adj[insert_pos:insert_pos] = [
+            #     "--log-driver", "k8s-file",
+            #     "--log-opt", "max-size=10mb",
+            #     "--log-opt", "max-file=5",
+            # ]
+
+        p = subprocess.run(
+            ["podman", *adj],
+            capture_output=True,
+            text=True,
+            timeout=timeout,
+        )
         return p.returncode, (p.stdout or "").strip(), (p.stderr or "").strip()
+
     except subprocess.TimeoutExpired:
         return 124, "", f"timeout after {timeout}s: podman {' '.join(args)}"
     except Exception as e:
         return 125, "", f"{type(e).__name__}: {e}"
+
 
 
 def is_container_running(name_or_id: str) -> bool:
