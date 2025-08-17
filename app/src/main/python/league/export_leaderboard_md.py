@@ -117,6 +117,9 @@ def main():
         league = session.get(League, args.league)
         league_name = league.name if league else f"League {args.league}"
 
+        # hard override the league name - a quick hack
+        league_name = "IEEE CoG 2025"
+
         rows = fetch_leaderboard_rows(session, args.league)
         md = to_markdown(rows, league_name, limit=args.limit)
 
