@@ -1,6 +1,7 @@
 package games.planetwars.runners
 
 import games.planetwars.agents.RemoteAgent
+import games.planetwars.core.GameParamGenerator
 import games.planetwars.core.GameParams
 import java.io.File
 import kotlin.math.roundToInt
@@ -37,7 +38,8 @@ fun main(args: Array<String>) {
     val gamesPerPair = parts.getOrNull(2)?.toIntOrNull() ?: 10
     val timeoutMs = parts.getOrNull(3)?.toLongOrNull() ?: 50L
 
-    val params = GameParams(numPlanets = 20, maxTicks = 2000)
+//    val params = GameParams(numPlanets = 20, maxTicks = 2000)
+    val params = GameParamGenerator.randomParams()
 
     val agentA = RemoteAgent("<agentA>", port = portA)
     val agentB = RemoteAgent("<agentB>", port = portB)

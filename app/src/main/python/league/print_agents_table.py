@@ -114,4 +114,4 @@ if __name__ == "__main__":
     print()
     print_all_agent_instances()
     print()
-    print_all_matches(limit=10)  # Adjust limit as needed
+    print_all_matches(league_id=2, limit=10)  # Adjust limit as needed

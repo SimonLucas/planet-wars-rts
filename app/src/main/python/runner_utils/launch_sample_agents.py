@@ -12,7 +12,7 @@ if __name__ == "__main__":
     # just launch the final sample agent
 
     # sample_entries = sample_entries
-    final_entry = sample_entries[-1]
+    # final_entry = sample_entries[-1]
     # sample_entries = [final_entry]
 
     for agent in sample_entries:

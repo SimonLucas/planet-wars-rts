@@ -36,7 +36,7 @@ MAX_RETRY_ON_WS_CLOSE = 1
 
 # Discovery assist
 PROBE_CANDIDATES = 6
-LEAGUE_ID = 1  # default league ID for remote pair runs
+LEAGUE_ID = 2  # default league ID for remote pair runs
 
 # Quarantine/backoff when WS blows up
 WS_ERROR_BACKOFF_SECS = 60  # keep problematic agents out of the pool briefly
@@ -395,6 +395,14 @@ def list_active_agents(session: Session) -> List[Tuple[Agent, AgentInstance, boo
 #     return tuple(random.sample(active, 2))  # type: ignore[return-value]
 #
 
+def random_choose_next_pair(ids: List[int]) -> Tuple[int, int]:
+    """
+    Randomly choose a pair of agent IDs from the provided list.
+    """
+    if len(ids) < 2:
+        raise ValueError("Not enough agent IDs to choose a pair")
+    return tuple(random.sample(ids, 2))
+
 def pick_two_ready_or_probe(session: Session) -> Tuple[Tuple[Agent, AgentInstance], Tuple[Agent, AgentInstance]]:
     """
     Use adaptive scheduler to choose a pair; ensure they're (quick) ready; if not,
@@ -405,7 +413,8 @@ def pick_two_ready_or_probe(session: Session) -> Tuple[Tuple[Agent, AgentInstanc
     id2row: Dict[int, Tuple[Agent, AgentInstance]] = {a.agent_id: (a, inst) for a, inst in rows}
 
     # 1) Try policy-guided pair
-    chosen = choose_next_pair(session, league_id=LEAGUE_ID)  # returns (aid_a, aid_b) or None
+    # chosen = choose_next_pair(session, league_id=LEAGUE_ID)  # returns (aid_a, aid_b) or None
+    chosen = random_choose_next_pair(list(id2row.keys()))
     if chosen:
         aid_a, aid_b = chosen
         pair_rows: List[Tuple[Agent, AgentInstance]] = []
@@ -500,7 +509,7 @@ def store_matches(session: Session, league_id: int, a: Agent, b: Agent, wins_a: 
 
 
 # ---------- main ----------
-def main(n_pairs: int = 1):
+def main(n_pairs: int = 1, league_id: int = LEAGUE_ID) -> None:
     with Session(ENGINE) as session:
         total_with_instances = (
             session.query(Agent)
@@ -542,7 +551,7 @@ def main(n_pairs: int = 1):
             inst_b.last_seen = now
             session.commit()
 
-            inserted = store_matches(session, league_id=1, a=a, b=b, wins_a=wins_a, wins_b=wins_b, draws=draws)
+            inserted = store_matches(session, league_id=league_id, a=a, b=b, wins_a=wins_a, wins_b=wins_b, draws=draws)
             session.commit()
 
             print(

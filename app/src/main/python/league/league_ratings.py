@@ -9,6 +9,7 @@ from sqlalchemy.orm import Session
 
 from league.init_db import get_default_db_path
 from league.league_schema import League, Match, Rating
+from league.run_agents_from_db import LEAGUE_ID
 
 # ---------- defaults (TrueSkill-like 1v1) ----------
 TS_DEFAULTS = {
@@ -235,8 +236,9 @@ def rebuild_ratings_from_matches(session: Session,
 
 # ---------- CLI ----------
 def _parse_args():
+    default_luague_id = LEAGUE_ID
     p = argparse.ArgumentParser(description="Rebuild or update league ratings from match history.")
-    p.add_argument("--league", type=int, default=1, help="League ID to process (default: 1)")
+    p.add_argument("--league", type=int, default=default_luague_id, help="League ID to process (default: 1)")
     p.add_argument("--reset", action="store_true", help="Rebuild ratings from scratch (wipes existing league ratings)")
     p.add_argument("--order", choices=["time", "id"], default="time",
                    help="When rebuilding, order matches by 'time' (started_at asc) or 'id' (default: time)")

@@ -10,6 +10,8 @@ from sqlalchemy.orm import Session
 # Your models & DB helper
 from league.init_db import get_default_db_path
 from league.league_schema import Agent, League, Match, Rating
+from league.run_agents_from_db import LEAGUE_ID
+
 
 def get_md_table_path() -> Path:
     """Returns a platform-independent default DB path."""
@@ -99,7 +101,8 @@ def main():
     ap = argparse.ArgumentParser(
         description="Export a Markdown leaderboard from ratings + match counts."
     )
-    ap.add_argument("--league", type=int, default=1, help="League ID (default: 1)")
+    default_league_id = LEAGUE_ID
+    ap.add_argument("--league", type=int, default=default_league_id, help="League ID (default: 1)")
     ap.add_argument("--limit", type=int, default=200, help="Max rows in table (default: 200)")
     ap.add_argument(
         "--out",
