@@ -54,7 +54,7 @@ baseline agents (including sample bots and top entries from GECCO 2025).
 
 - The league will begin shortly and be updated continuously.
 - Submitted entries may be re-evaluated as new submissions arrive.
-- Once live, the league will be linked here: **_Coming Soon_**
+- Once live, the league will be linked here: (TrueSkill League)[https://github.com/SimonLucas/planet-wars-rts-submissions/blob/main/results/ieee-cog-2025/leaderboard.md]
 
 Final results will be published in this repository and announced  
 during the relevant session at **IEEE CoG 2025**.
