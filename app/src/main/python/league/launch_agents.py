@@ -327,4 +327,4 @@ def main(limit: Optional[int] = 5, restart_existing: bool = False):
 
 if __name__ == "__main__":
     # limit=None to process all; restart_existing=True to force rebuild/restart
-    main(limit=50, restart_existing=True)
+    main(limit=10, restart_existing=True)

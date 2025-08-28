@@ -185,7 +185,7 @@ def stop_and_cleanup_container(agent_id: str, github_token: str, issue_number: i
                      "✅ Evaluation complete. Stopping container.", github_token)
 
 
-def process_issue(issue: dict, base_dir: Path, github_token: str, timeout_seconds: int = 300) -> bool:
+def process_issue(issue: dict, base_dir: Path, github_token: str, timeout_seconds: int = 600) -> bool:
     issue_number = issue["number"]
 
     # Step 1: Extract agent info

@@ -71,7 +71,7 @@ def poll_and_process(repo: str, github_token: str, base_dir: Path):
                     print(f"⚠️ Could not add processing label: {e}")
 
                 try:
-                    success = process_issue(issue, base_dir, github_token)
+                    success = process_issue(issue, base_dir, github_token, EVALUATION_TIMEOUT)
                     final_label = "completed" if success else "failed"
                     add_label(repo, issue_number, [final_label], github_token)
                     remove_label(repo, issue_number, "processing", github_token)

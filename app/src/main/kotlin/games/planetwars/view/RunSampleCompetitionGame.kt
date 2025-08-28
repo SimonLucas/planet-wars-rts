@@ -1,6 +1,8 @@
 package games.planetwars.view
 
+import competition_entry.GreedyHeuristicAgent
 import games.planetwars.agents.RemoteAgent
+import games.planetwars.agents.random.CarefulRandomAgent
 import games.planetwars.core.GameParams
 import games.planetwars.runners.GameRunner
 import games.planetwars.core.GameStateFactory
@@ -18,11 +20,14 @@ fun main() {
         growthToRadiusFactor = 400.0,
     )
     val gameState = GameStateFactory(gameParams).createGame()
-//    val agent1 = CarefulRandomAgent()
+    val agent1 = CarefulRandomAgent()
+    val agent2 = GreedyHeuristicAgent()
     // Use a remote agent that connects to a game agent server running on a specified port
     // Be sure to start the server first
-    val agent1 = RemoteAgent("<specified by remote server>", port = 9005)
-    val agent2 = RemoteAgent("<specified by remote server>", port = 9006)
+//    val agent1 = RemoteAgent("<specified by remote server>", port = 62304)
+//    val agent2 = RemoteAgent("<specified by remote server>", port = 62277)
+//    val agent1 = RemoteAgent("<specified by remote server>", port = 9005)
+//    val agent2 = RemoteAgent("<specified by remote server>", port = 9006)
     val gameRunner = GameRunner(agent1, agent2, gameParams)
 
     val title = "${agent1.getAgentType()} : Planet Wars : ${agent2.getAgentType()}"
