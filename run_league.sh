@@ -7,7 +7,7 @@ N=${1:-5}
 for i in $(seq "$N"); do
   echo "Run $i"
   SECONDS=0
-  python3 -m league.run_agents_from_db
+  python3 -m league.run_agents_uniform
   echo "Elapsed: ${SECONDS}s"
   python -m league.league_ratings --reset --order time
   python -m league.export_leaderboard_md
