@@ -25,7 +25,7 @@ for i in $(seq "$N"); do
   # pre-emptively trim logs at the start of each iteration
   shrink_logs
 
-  python3 -m league.run_agents_from_db
+  python3 -m league.run_agents_uniform
   echo "Elapsed: ${SECONDS}s"
 
   # trim again right after the noisy step
