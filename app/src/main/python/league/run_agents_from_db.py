@@ -36,7 +36,7 @@ MAX_RETRY_ON_WS_CLOSE = 1
 
 # Discovery assist
 PROBE_CANDIDATES = 6
-LEAGUE_ID = 4  # default league ID for remote pair runs
+LEAGUE_ID = 5  # default league ID for remote pair runs
 
 # Quarantine/backoff when WS blows up
 WS_ERROR_BACKOFF_SECS = 60  # keep problematic agents out of the pool briefly
