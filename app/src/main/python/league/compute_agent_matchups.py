@@ -9,7 +9,7 @@ Outputs:
     * all per-agent head-to-head tables
 
 Usage:
-  python compute_agent_matchups.py \
+  python -m league.compute_agent_matchups \
       --db sqlite://///home/simonlucas/cog-runs/new-league.db \
       --league-id 5 \
       --out-dir /home/simonlucas/cog-runs/agent-matchups
@@ -110,13 +110,12 @@ def build_agent_rows(agent_id: int, stats: Dict[int, Dict[int, PairStat]], agent
         total_wins += ps.wins
         total_games += ps.games
 
-    # Sort by games desc, then opponent name
-    rows.sort(key=lambda r: (-r[2], r[0].lower()))
+    # ✅ Sort by Win Rate % (desc), then Games (desc), then Opponent name
+    rows.sort(key=lambda r: (-r[3], -r[2], r[0].lower()))
 
     weighted_avg = (100.0 * total_wins / total_games) if total_games > 0 else 0.0
     unweighted_avg = (sum(r[3] for r in rows) / len(rows)) if rows else 0.0
     return rows, (total_wins, total_games), unweighted_avg, weighted_avg
-
 
 def make_agent_markdown(
     agent_id: int,
