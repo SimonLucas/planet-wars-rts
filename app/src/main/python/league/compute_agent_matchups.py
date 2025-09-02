@@ -1,4 +1,12 @@
 #!/usr/bin/env python3
+
+"""
+run as:
+
+python -m league.compute_agent_matchups --db sqlite:////home/simonlucas/cog-runs/new-league.db --league-id 5 --out-dir /home/simonlucas/cog-runs/match-reports
+
+"""
+
 from __future__ import annotations
 
 import argparse
