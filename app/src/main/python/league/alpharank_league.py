@@ -8,6 +8,12 @@ from sqlalchemy import create_engine, select
 from sqlalchemy.orm import Session
 from league.league_schema import Agent, League, Match
 
+"""
+Usage:
+  python -m league.alpharank_league --db sqlite://///home/simonlucas/cog-runs/new-league.db  --league-id 5  --out-dir /home/simonlucas/cog-runs/match-reports  --alpha 100.0 --mutation 1e-6
+
+"""
+
 @dataclass
 class PairCounts:
     # For unordered pair (a,b) with a<b: wins_ab = a beats b, wins_ba = b beats a
