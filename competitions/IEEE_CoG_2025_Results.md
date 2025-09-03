@@ -17,6 +17,6 @@ Congratulations to all, especially TeamTitans who dominated this!
 
 See the slides linked above for an outline of each of these leading entries.
 
-[Browse the head-to-head match results](./league_matchups.md)
+[Browse the head-to-head match results](../results/ieee-cog-2025/league_matchups.md)
 
 These results were used to produce the final rankings.
