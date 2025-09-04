@@ -48,16 +48,23 @@ the game will run faster.
 
 ## Evaluation
 
-The winner will be determined via a **TrueSkill league**  
+The plan was to determine the winner via a **TrueSkill league**  
 involving all submitted entries plus a small pool of  
 baseline agents (including sample bots and top entries from GECCO 2025).
 
 - The league will begin shortly and be updated continuously.
 - Submitted entries may be re-evaluated as new submissions arrive.
-- Once live, the league will be linked here: (TrueSkill League)[https://github.com/SimonLucas/planet-wars-rts-submissions/blob/main/results/ieee-cog-2025/leaderboard.md]
+- Once live, the league will be linked here: [TrueSkill League](https://github.com/SimonLucas/planet-wars-rts-submissions/blob/main/results/ieee-cog-2025/leaderboard.md)
 
-Final results will be published in this repository and announced  
-during the relevant session at **IEEE CoG 2025**.
+
+### Update
+While running the TrueSkill league, the results were 
+found to be unstable and often not reflective of head-to-head
+performance or average win rate.  
+
+Final rankings were based on average win rates
+and confirmed by checking the head-to-head win rates.
+See [Results](./IEEE_CoG_2025_Results.md)
 
 ---
 
