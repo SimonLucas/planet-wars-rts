@@ -1,4 +1,12 @@
 # launch_agents_from_db.py
+"""
+Launch Planet Wars agents from DB with commit-scoped, collision-safe names.
+
+Key idea: every artifact (repo dir, image, container) is uniquely identified by (agent_id, commit[:8]).
+We also label images/containers and verify labels before trusting an existing container.
+"""
+
+import json
 import os
 import re
 import socket
@@ -11,7 +19,6 @@ from sqlalchemy.orm import Session
 
 from league.init_db import get_default_db_path
 from league.league_schema import Base, Agent, AgentInstance
-from runner_utils.agent_entry import AgentCommitEntry
 from runner_utils.utils import run_command, find_free_port
 from util.submission_evaluator_bot import load_github_token
 
@@ -23,8 +30,9 @@ ENGINE = create_engine(DB_PATH)
 
 
 # ---------- Small helpers ----------
-def short_hash(full: str) -> str:
-    return full[:7] if full else "unknown"
+def commit_short(full: Optional[str], n: int = 8) -> str:
+    full = full or ""
+    return full[:n] if full else "unknown"
 
 
 def sanitize_image_tag(name: str) -> str:
@@ -92,7 +100,6 @@ def get_mapped_host_port(container_name: str, container_port: int = EXPOSED_INTE
     """
     try:
         out = run_capture(["podman", "port", container_name, str(container_port)])
-        # Examples: '0.0.0.0:63223', ':::63223', '63223'
         last = out.splitlines()[-1].strip()
         if ":" in last:
             host_port = last.rsplit(":", 1)[-1]
@@ -112,9 +119,33 @@ def get_container_id(name_or_id: str) -> Optional[str]:
         return None
 
 
+def get_labels(name_or_id: str) -> dict:
+    try:
+        out = run_capture(["podman", "inspect", "-f", "{{ json .Config.Labels }}", name_or_id])
+        return json.loads(out) if out else {}
+    except subprocess.CalledProcessError:
+        return {}
+
+
+# ---------- Deterministic, commit-scoped names ----------
+def repo_dir_for(a: Agent) -> Path:
+    slug = sanitize_image_tag(a.name)
+    return BASE_DIR / f"{slug}-{commit_short(a.commit)}"
+
+
+def image_ref_for(a: Agent) -> str:
+    # repo/name must be valid; include agent_id to avoid collisions across same name
+    slug = sanitize_image_tag(a.name)
+    return f"pw/{slug}-{a.agent_id}:{commit_short(a.commit)}"
+
+
+def container_name_for(a: Agent) -> str:
+    return f"pw-agent-{a.agent_id}-{commit_short(a.commit)}"
+
+
 # ---------- Stage 1: Clone ----------
-def stage1_clone_repo(agent: AgentCommitEntry, base_dir: Path, github_token: str) -> Path:
-    repo_dir = base_dir / f"{sanitize_image_tag(agent.id)}-{short_hash(agent.commit)}"
+def stage1_clone_repo(a: Agent, github_token: str) -> Path:
+    repo_dir = repo_dir_for(a)
     if repo_dir.exists() and (repo_dir / ".git").exists():
         print(f"📂 Repo exists: {repo_dir}")
         return repo_dir
@@ -122,20 +153,20 @@ def stage1_clone_repo(agent: AgentCommitEntry, base_dir: Path, github_token: str
     repo_dir.parent.mkdir(parents=True, exist_ok=True)
 
     from urllib.parse import quote, urlparse, urlunparse
-    parsed = urlparse(agent.repo_url)
+    parsed = urlparse(a.repo_url)
     authenticated = parsed._replace(netloc=f"{quote(github_token)}@{parsed.netloc}")
     clone_url = urlunparse(authenticated)
 
-    print(f"📥 Cloning {agent.repo_url} -> {repo_dir}")
+    print(f"📥 Cloning {a.repo_url} -> {repo_dir}")
     run_command(["git", "clone", clone_url, str(repo_dir)])
     return repo_dir
 
 
 # ---------- Stage 2: Checkout commit ----------
-def stage2_checkout_commit(agent: AgentCommitEntry, repo_dir: Path) -> None:
-    print(f"📌 Checking out {agent.commit} in {repo_dir.name}")
+def stage2_checkout_commit(a: Agent, repo_dir: Path) -> None:
+    print(f"📌 Checking out {a.commit} in {repo_dir.name}")
     run_command(["git", "fetch", "--all"], cwd=repo_dir)
-    run_command(["git", "checkout", agent.commit], cwd=repo_dir)
+    run_command(["git", "checkout", a.commit], cwd=repo_dir)
 
 
 # ---------- Stage 3: Build on host if needed ----------
@@ -155,29 +186,45 @@ def stage3_host_build_if_needed(repo_dir: Path) -> None:
 
 
 # ---------- Stage 4: Build container image ----------
-def stage4_build_image(agent: AgentCommitEntry, repo_dir: Path) -> str:
-    image_name = f"game-server-{sanitize_image_tag(agent.id)}"
+def stage4_build_image(a: Agent, repo_dir: Path) -> str:
+    image_ref = image_ref_for(a)
+
     dockerfile = None
     for candidate in ("Dockerfile", "Containerfile"):
         if (repo_dir / candidate).exists():
             dockerfile = candidate
             break
 
-    cmd = ["podman", "build", "-t", image_name, "."]
+    cmd = [
+        "podman", "build",
+        "-t", image_ref,
+        "--label", f"pw.agent_id={a.agent_id}",
+        "--label", f"pw.name={a.name}",
+        "--label", f"pw.commit={a.commit}",
+        "--label", f"pw.repo={a.repo_url}",
+        ".",
+    ]
     if dockerfile:
-        cmd = ["podman", "build", "-t", image_name, "-f", dockerfile, "."]
+        cmd = [
+            "podman", "build",
+            "-t", image_ref,
+            "--label", f"pw.agent_id={a.agent_id}",
+            "--label", f"pw.name={a.name}",
+            "--label", f"pw.commit={a.commit}",
+            "--label", f"pw.repo={a.repo_url}",
+            "-f", dockerfile, ".",
+        ]
 
-    print(f"🧱 Building image {image_name} from {repo_dir.name}")
+    print(f"🧱 Building image {image_ref} from {repo_dir.name}")
     run_command(cmd, cwd=repo_dir)
-    return image_name
+    return image_ref
 
 
 # ---------- Stage 5: Run container ----------
-def stage5_run_container(agent: AgentCommitEntry, image_name: str, desired_port: Optional[int] = None) -> Tuple[
-    int, str]:
-    container_name = f"container-{sanitize_image_tag(agent.id)}"
+def stage5_run_container(a: Agent, image_ref: str, desired_port: Optional[int] = None) -> Tuple[int, str]:
+    container_name = container_name_for(a)
 
-    # Clean prior container if exists (any state)
+    # Remove only THIS agent+commit container if it exists
     try:
         run_command(["podman", "rm", "-f", container_name])
     except subprocess.CalledProcessError:
@@ -189,12 +236,15 @@ def stage5_run_container(agent: AgentCommitEntry, image_name: str, desired_port:
         "podman", "run", "-d",
         "-p", f"{port}:{EXPOSED_INTERNAL_PORT}",
         "--name", container_name,
-        image_name
+        "--label", f"pw.agent_id={a.agent_id}",
+        "--label", f"pw.name={a.name}",
+        "--label", f"pw.commit={a.commit}",
+        "--label", f"pw.repo={a.repo_url}",
+        image_ref
     ])
     if not container_id:
         raise RuntimeError("Podman did not return a container ID")
 
-    # Sanity: confirm mapping exists
     mapped = get_mapped_host_port(container_name)
     if mapped != port:
         raise RuntimeError(f"Port mapping mismatch: expected {port}, got {mapped}")
@@ -217,32 +267,25 @@ def upsert_agent_instance(session: Session, agent_id: int, port: int, container_
 
 
 # ---------- Orchestrator for a single Agent row ----------
-def launch_agent_for_db_agent(db_agent: Agent, base_dir: Path, github_token: str, reuse_port: Optional[int]) -> Tuple[
-    Path, str, int, str]:
-    agent = AgentCommitEntry(
-        id=db_agent.name,  # already sanitized + short hash appended
-        repo_url=db_agent.repo_url,  # root .git URL
-        commit=db_agent.commit  # full (preferred) or short hash
-    )
-
-    repo_dir = stage1_clone_repo(agent, base_dir, github_token)
-    stage2_checkout_commit(agent, repo_dir)
+def launch_agent_for_db_agent(a: Agent, github_token: str, reuse_port: Optional[int]) -> Tuple[Path, str, int, str]:
+    repo_dir = stage1_clone_repo(a, github_token)
+    stage2_checkout_commit(a, repo_dir)
     stage3_host_build_if_needed(repo_dir)
-    image_name = stage4_build_image(agent, repo_dir)
-    port, container_id = stage5_run_container(agent, image_name, desired_port=reuse_port)
-    return repo_dir, image_name, port, container_id
+    image_ref = stage4_build_image(a, repo_dir)
+    port, container_id = stage5_run_container(a, image_ref, desired_port=reuse_port)
+    return repo_dir, image_ref, port, container_id
 
 
 # ---------- Main driver ----------
-def main(limit: Optional[int] = 5, restart_existing: bool = False):
+def main(limit: Optional[int] = 10, restart_existing: bool = False):
     """
-    Robust launching:
+    Robust launching with commit-scoped naming:
       - If an AgentInstance exists:
-          * We check if the container (by ID or deterministic name) is RUNNING.
-          * If running, we fetch the ACTUAL mapped host port from podman (ignore DB value).
-          * If port mapping missing or port not listening, we relaunch (reuse DB port if free).
-          * If mapped port differs from DB, we update the DB.
-      - If no AgentInstance, we launch fresh.
+          * Check if its container (by recorded ID or our deterministic name) is RUNNING.
+          * Verify labels match (agent_id, commit); otherwise treat as not running.
+          * If running and healthy, update DB with the actual mapped port/ID if needed and skip.
+          * Else, relaunch (reusing DB port if free).
+      - If no AgentInstance, launch fresh.
     """
     github_token = load_github_token()
     BASE_DIR.mkdir(parents=True, exist_ok=True)
@@ -256,24 +299,35 @@ def main(limit: Optional[int] = 5, restart_existing: bool = False):
         print(f"📋 Preparing to launch {len(agents)} agents (limit={limit})")
 
         for a in agents:
-            container_name = f"container-{sanitize_image_tag(a.name)}"
+            container_name = container_name_for(a)
             inst = session.query(AgentInstance).filter_by(agent_id=a.agent_id).first()
 
             if inst:
                 recorded_id = (inst.container_id or "").strip()
                 recorded_port = inst.port
 
-                # Detect running state
+                # Detect running state (prefer recorded ID)
                 running = False
                 ident = None
-                if recorded_id:
+                if recorded_id and container_exists(recorded_id):
                     running = is_container_running(recorded_id)
                     if running:
                         ident = recorded_id
+
                 if not running and container_exists(container_name):
                     running = is_container_running(container_name)
                     if running:
                         ident = container_name
+
+                # Verify labels to avoid cross-association
+                if running and not restart_existing:
+                    labels = get_labels(ident or container_name) or {}
+                    if not (
+                        labels.get("pw.agent_id") == str(a.agent_id)
+                        and labels.get("pw.commit") == a.commit
+                    ):
+                        # Not our container; treat as not running
+                        running = False
 
                 if running and not restart_existing:
                     mapped_port = get_mapped_host_port(ident or container_name)
@@ -295,13 +349,12 @@ def main(limit: Optional[int] = 5, restart_existing: bool = False):
                         print(f"⏭️  Skipping {a.name} (container running on port {mapped_port})")
                         continue
 
-                # Relaunch (reuse DB port if possible and not 0/placeholder)
-                reuse_port = recorded_port if (
-                            recorded_port and recorded_port != 123 and port_is_free(recorded_port)) else None
+                # Relaunch (reuse DB port if possible and not placeholder)
+                reuse_port = recorded_port if (recorded_port and port_is_free(recorded_port)) else None
                 try:
                     print(f"\n🔁 Relaunching {a.name} (reuse port: {reuse_port or 'auto'})")
                     _, _, port, container_id = launch_agent_for_db_agent(
-                        a, BASE_DIR, github_token, reuse_port=reuse_port
+                        a, github_token, reuse_port=reuse_port
                     )
                     upsert_agent_instance(session, a.agent_id, port, container_id)
                     session.commit()
@@ -315,7 +368,7 @@ def main(limit: Optional[int] = 5, restart_existing: bool = False):
                 try:
                     print(f"\n=== {a.name} ===")
                     _, _, port, container_id = launch_agent_for_db_agent(
-                        a, BASE_DIR, github_token, reuse_port=None
+                        a, github_token, reuse_port=None
                     )
                     upsert_agent_instance(session, a.agent_id, port, container_id)
                     session.commit()
