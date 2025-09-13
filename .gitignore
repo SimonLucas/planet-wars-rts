@@ -82,3 +82,4 @@ __pycache__/
 *.pyd
 *.pyc
 app/src/main/python/runner_utils/competition_entries.py
+/.venv
