@@ -8,7 +8,7 @@ import games.planetwars.core.GameStateFactory
 import xkg.jvm.AppLauncher
 
 fun main() {
-    val gameParams = GameParams(numPlanets = 20, maxTicks = 1000)
+    val gameParams = GameParams(numPlanets = 30, maxTicks = 1000)
     val gameState = GameStateFactory(gameParams).createGame()
     val agent1 = CarefulRandomAgent()
     val agent2 = BetterRandomAgent()
