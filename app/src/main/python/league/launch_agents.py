@@ -17,6 +17,7 @@ from typing import Optional, Tuple
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 
+from league.config import BASE_DIR
 from league.init_db import get_default_db_path
 from league.league_schema import Base, Agent, AgentInstance
 from runner_utils.utils import run_command, find_free_port
@@ -24,7 +25,6 @@ from util.submission_evaluator_bot import load_github_token
 
 # ---------- Config ----------
 DB_PATH = get_default_db_path()
-BASE_DIR = Path.home() / "cog-runs" / "agents"
 EXPOSED_INTERNAL_PORT = 8080
 ENGINE = create_engine(DB_PATH)
 

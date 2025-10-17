@@ -23,7 +23,6 @@ from util.submission_evaluator_bot import load_github_token
 # Config
 REPO = "SimonLucas/planet-wars-rts-submissions"
 DB_PATH = get_default_db_path()
-# SUBMISSION_DIR = Path.home() / "cog-runs" / "submissions"
 
 
 def run_command(cmd: List[str], cwd: Optional[Path] = None) -> str:

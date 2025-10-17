@@ -1,12 +1,14 @@
 # init_db.py
 
 from sqlalchemy import create_engine
+
+from league.config import EVAL_PHASE
 from league.league_schema import Base
 from pathlib import Path
 
 def get_default_db_path() -> str:
     """Returns a platform-independent default DB path."""
-    db_dir = Path.home() / "cog-runs"
+    db_dir = Path.home() / EVAL_PHASE
     db_dir.mkdir(parents=True, exist_ok=True)
     return f"sqlite:///{db_dir / 'new-league.db'}"
 
