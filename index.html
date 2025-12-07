@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Planet Wars RTS - AI Competition</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 60px 20px;
+            text-align: center;
+            border-radius: 10px;
+            margin-bottom: 40px;
+        }
+
+        header h1 {
+            font-size: 3em;
+            margin-bottom: 10px;
+        }
+
+        header p {
+            font-size: 1.3em;
+            opacity: 0.95;
+        }
+
+        .cta-buttons {
+            margin-top: 30px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn {
+            padding: 12px 30px;
+            border-radius: 5px;
+            text-decoration: none;
+            font-weight: bold;
+            transition: transform 0.2s;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+
+        .btn-primary {
+            background: white;
+            color: #667eea;
+        }
+
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.2);
+            color: white;
+            border: 2px solid white;
+        }
+
+        .section {
+            background: white;
+            padding: 40px;
+            margin-bottom: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+
+        .section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            font-size: 2em;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .section h3 {
+            color: #764ba2;
+            margin-top: 25px;
+            margin-bottom: 15px;
+            font-size: 1.5em;
+        }
+
+        .highlight-box {
+            background: #f0f4ff;
+            border-left: 4px solid #667eea;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 5px;
+        }
+
+        .competition-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+
+        .competition-card h3 {
+            color: white;
+            margin-top: 0;
+        }
+
+        .past-competition {
+            background: #e8eaf6;
+            color: #333;
+            padding: 20px;
+            margin: 15px 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .past-competition h3 {
+            color: #667eea;
+            margin-top: 0;
+        }
+
+        .game-images {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .game-images img {
+            width: 100%;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 20px 0;
+        }
+
+        .feature-card {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-top: 3px solid #667eea;
+        }
+
+        .feature-card h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+
+        li {
+            margin: 8px 0;
+        }
+
+        a {
+            color: #667eea;
+            text-decoration: none;
+            font-weight: 500;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        footer {
+            text-align: center;
+            padding: 40px 20px;
+            color: #666;
+        }
+
+        .qr-code {
+            float: right;
+            margin: 0 0 20px 20px;
+            max-width: 150px;
+        }
+
+        @media (max-width: 768px) {
+            header h1 {
+                font-size: 2em;
+            }
+
+            .section {
+                padding: 20px;
+            }
+
+            .qr-code {
+                float: none;
+                display: block;
+                margin: 20px auto;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Planet Wars RTS</h1>
+            <p>Multi-Agent AI Competition</p>
+            <div class="cta-buttons">
+                <a href="https://github.com/SimonLucas/planet-wars-rts" class="btn btn-primary">View on GitHub</a>
+                <a href="https://simonlucas.github.io/typescript-play/" class="btn btn-secondary">Watch Live Gameplay</a>
+                <a href="submit_entry.html" class="btn btn-secondary">Submit Entry</a>
+            </div>
+        </header>
+
+        <div class="section">
+            <h2>Upcoming Competitions 2026</h2>
+
+            <div class="competition-card">
+                <h3>AAMAS 2026</h3>
+                <p><strong>International Conference on Autonomous Agents and Multiagent Systems</strong></p>
+                <p><strong>When:</strong> May 25-29, 2026</p>
+                <p><strong>Where:</strong> Paphos, Cyprus</p>
+                <p><strong>Website:</strong> <a href="https://cyprusconferences.org/aamas2026/" style="color: white; text-decoration: underline;">cyprusconferences.org/aamas2026</a></p>
+                <p style="margin-top: 15px;">Competition details and submission guidelines coming soon!</p>
+            </div>
+
+            <div class="competition-card">
+                <h3>IEEE WCCI 2026</h3>
+                <p><strong>IEEE World Congress on Computational Intelligence</strong></p>
+                <p><strong>When:</strong> June 21-26, 2026</p>
+                <p><strong>Where:</strong> Maastricht, Netherlands</p>
+                <p><strong>Website:</strong> <a href="https://attend.ieee.org/wcci-2026/" style="color: white; text-decoration: underline;">attend.ieee.org/wcci-2026</a></p>
+                <p style="margin-top: 15px;">Competition details and submission guidelines coming soon!</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>About the Competition</h2>
+
+            <div class="highlight-box">
+                <p><strong>Planet Wars</strong> is a real-time strategy (RTS) game where AI agents compete to gain control of planets and destroy enemy units. The challenge is to develop agents that can play well across a wide range of game parameters and against diverse opponent strategies.</p>
+            </div>
+
+            <div class="game-images">
+                <img src="https://github.com/user-attachments/assets/dc702b7c-745d-44e9-a7b9-d172ecd65478" alt="Fully Observable Game">
+                <img src="https://github.com/user-attachments/assets/e1de70d3-444d-49bf-b0ee-dc5982eebbfc" alt="Partially Observable Game">
+            </div>
+
+            <h3>Key Features</h3>
+
+            <div class="features-grid">
+                <div class="feature-card">
+                    <h4>Flexible Game Modes</h4>
+                    <p>Compete in both fully observable and partially observable game variants</p>
+                </div>
+
+                <div class="feature-card">
+                    <h4>Real-Time Strategy</h4>
+                    <p>Handle simultaneous moves and unpredictable opponent actions</p>
+                </div>
+
+                <div class="feature-card">
+                    <h4>Varied Parameters</h4>
+                    <p>Test your agents across different planet counts, growth rates, and transit speeds</p>
+                </div>
+
+                <div class="feature-card">
+                    <h4>Multiple Languages</h4>
+                    <p>Develop agents in Kotlin, Java, Python, or any language with WebSocket support</p>
+                </div>
+            </div>
+
+            <h3>What Makes This Challenging?</h3>
+            <ul>
+                <li><strong>Generalization:</strong> Agents must adapt to varying game parameters</li>
+                <li><strong>Real-Time Decisions:</strong> Limited time per decision (typically 50ms)</li>
+                <li><strong>Partial Observability:</strong> Handle uncertainty about hidden information</li>
+                <li><strong>Strategic Depth:</strong> Balance expansion, defense, and attack strategies</li>
+                <li><strong>Opponent Modeling:</strong> Adapt to different opponent playstyles</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Past Competitions</h2>
+
+            <div class="past-competition">
+                <h3>GECCO 2025</h3>
+                <p><strong>Genetic and Evolutionary Computation Conference</strong></p>
+                <p><strong>Winner:</strong> TeamTitans (Frankfurt University of Applied Sciences)</p>
+                <p>Competed in both fully observable and partially observable modes with 11 entries across varied game parameters.</p>
+                <p style="margin-top: 10px;">
+                    <a href="competitions/GECCO_2025.html">Competition Details</a> |
+                    <a href="competitions/GECCO_2025_Results.html">View Results</a>
+                </p>
+            </div>
+
+            <div class="past-competition">
+                <h3>IEEE CoG 2025</h3>
+                <p><strong>IEEE Conference on Games</strong></p>
+                <p><strong>Winners:</strong></p>
+                <ol>
+                    <li>TeamTitansV3</li>
+                    <li>NanaBoshi</li>
+                    <li>GalacticArmada</li>
+                </ol>
+                <p>Focused on fully observable mode with 33 agent submissions.</p>
+                <p style="margin-top: 10px;">
+                    <a href="competitions/IEEE_CoG_2025.html">Competition Details</a> |
+                    <a href="competitions/IEEE_CoG_2025_Results.html">View Results</a>
+                </p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>How to Participate</h2>
+
+            <h3>1. Develop Your Agent</h3>
+            <p>Create an AI agent that implements the PlanetWarsAgent interface. You can use:</p>
+            <ul>
+                <li><strong>Kotlin/Java:</strong> Full access to forward model for planning algorithms (MCTS, etc.)</li>
+                <li><strong>Python:</strong> Ideal for neural network-based agents (PyTorch, TensorFlow)</li>
+                <li><strong>Other Languages:</strong> Any language with WebSocket and JSON support</li>
+            </ul>
+
+            <h3>2. Test Locally</h3>
+            <p>Run games with the visual interface or headless mode to develop and debug your strategy.</p>
+
+            <h3>3. Containerize</h3>
+            <p>Package your agent in a Docker/Podman container that exposes a WebSocket server on port 8080.</p>
+
+            <h3>4. Submit</h3>
+            <p>Create a GitHub issue in the <a href="https://github.com/SimonLucas/planet-wars-rts-submissions/issues">submissions repository</a> with your containerized agent details.</p>
+
+            <div class="highlight-box" style="margin-top: 20px;">
+                <p><strong>Get Started:</strong> Check out the detailed <a href="https://github.com/SimonLucas/planet-wars-rts/blob/main/submit_entry.md">Submission Instructions</a> for complete guidance on developing and submitting your agent.</p>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Resources</h2>
+
+            <ul>
+                <li><a href="https://github.com/SimonLucas/planet-wars-rts">Main Repository</a> - Source code and examples</li>
+                <li><a href="https://github.com/SimonLucas/planet-wars-rts/blob/main/submit_entry.md">Submission Guide</a> - How to submit your agent</li>
+                <li><a href="https://github.com/SimonLucas/planet-wars-rts-submissions">Submissions Repository</a> - Submit and track entries</li>
+                <li><a href="https://simonlucas.github.io/typescript-play/">Live Gameplay Demo</a> - Watch AI agents compete</li>
+                <li><a href="https://github.com/Priwinn/planet-wars-rts/">Python Example</a> - Complete Python agent with neural network</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Contact & Links</h2>
+
+            <p>For questions, suggestions, or collaboration opportunities:</p>
+            <ul>
+                <li>Open an issue on <a href="https://github.com/SimonLucas/planet-wars-rts/issues">GitHub</a></li>
+                <li>Check the <a href="https://github.com/SimonLucas/planet-wars-rts">repository README</a> for updates</li>
+                <li>Follow competition-specific pages for detailed guidelines and deadlines</li>
+            </ul>
+        </div>
+
+        <footer>
+            <p>Planet Wars RTS Competition | Open Source Multi-Agent AI Challenge</p>
+            <p style="margin-top: 10px;">
+                <a href="https://github.com/SimonLucas/planet-wars-rts">GitHub</a> |
+                <a href="https://github.com/SimonLucas/planet-wars-rts-submissions">Submissions</a>
+            </p>
+        </footer>
+    </div>
+</body>
+</html>

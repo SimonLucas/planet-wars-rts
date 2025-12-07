@@ -47,20 +47,20 @@ class ParallelLeagueRunner(
                 PureRandomAgent(),
                 BetterRandomAgent(),
                 CarefulRandomAgent(),
-                SimpleEvoAgent(
-                    useShiftBuffer = true,
-                    nEvals = 50,
-                    sequenceLength = 200,
-                    opponentModel = DoNothingAgent(),
-                    probMutation = 0.8,
-                )
+//                SimpleEvoAgent(
+//                    useShiftBuffer = true,
+//                    nEvals = 50,
+//                    sequenceLength = 200,
+//                    opponentModel = DoNothingAgent(),
+//                    probMutation = 0.8,
+//                )
             )
 
             val nLeagues = 9
             val leagues = List(nLeagues) {
                 RoundRobinLeague(
                     agents = makeAgents(),
-                    gamesPerPair = 10,
+                    gamesPerPair = 1000,
                     gameParams = gameParams,
                     runRemoteAgents = false
                 )

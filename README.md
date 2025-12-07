@@ -32,8 +32,21 @@ range of opponent strategies.
 For a quick idea of the game, watch some sample
 [AI agents play live](https://simonlucas.github.io/typescript-play/).
 
-So far it has been accepted to
-run in conjunction with the following conferences:
+## Upcoming Competitions 2026
+
+We're excited to announce that Planet Wars RTS has been accepted to run at two major conferences in 2026:
+
+- **[IEEE WCCI 2026](https://attend.ieee.org/wcci-2026/)** (IEEE World Congress on Computational Intelligence)
+  - June 21-26, 2026 in Maastricht, Netherlands
+  - Competition details coming soon
+
+- **[AAMAS 2026](https://cyprusconferences.org/aamas2026/)** (International Conference on Autonomous Agents and Multiagent Systems)
+  - May 25-29, 2026 in Paphos, Cyprus
+  - Competition details coming soon
+
+## Past Competitions
+
+The competition has successfully run at the following conferences:
 
 - [GECCO 2025 Competition Specifics](competitions/GECCO_2025.md) (Deadline July 9, 2025)
   -- [Results now available](competitions/GECCO_2025_Results.md)
