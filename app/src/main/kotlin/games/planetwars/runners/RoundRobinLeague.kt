@@ -113,7 +113,7 @@ data class RoundRobinLeague(
                 val t = System.currentTimeMillis()
                 val agent1 = agents[i]
                 val agent2 = agents[j]
-                print("Running ${agent1.getAgentType()} vs ${agent2.getAgentType()}... ")
+                println("Running ${agent1.getAgentType()} vs ${agent2.getAgentType()}... ")
                 val result = runPair(agent1, agent2)
                 // update the league scores for each agent
                 val leagueEntry1 = scores[agent1.getAgentType()]!!
@@ -122,7 +122,7 @@ data class RoundRobinLeague(
                 leagueEntry2.points += result[Player.Player2]!!
                 leagueEntry1.nGames += gamesPerPair
                 leagueEntry2.nGames += gamesPerPair
-                print("$gamesPerPair games took ${(System.currentTimeMillis() - t) / 1000} seconds, ")
+                println("$gamesPerPair games took ${(System.currentTimeMillis() - t) / 1000} seconds, ")
             }
         }
         println("Round Robin took ${(System.currentTimeMillis() - t) / 1000} seconds")
