@@ -56,7 +56,7 @@ class ParallelLeagueRunner(
 //                )
             )
 
-            val nLeagues = 9
+            val nLeagues = 24
             val leagues = List(nLeagues) {
                 RoundRobinLeague(
                     agents = makeAgents(),
