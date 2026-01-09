@@ -7,10 +7,10 @@ from pathlib import Path
 from typing import Optional
 
 
-def run_command(cmd: list[str], cwd: Optional[Path] = None):
+def run_command(cmd: list[str], cwd: Optional[Path] = None, env: Optional[dict] = None):
     redacted_cmd = [re.sub(r'(https://)([^:@]+)(@github\.com)', r'\1***REDACTED***\3', arg) for arg in cmd]
     print(f"🔧 Running entry: {' '.join(redacted_cmd)} (in {cwd or Path.cwd()})")
-    subprocess.run(cmd, check=True, cwd=cwd)
+    subprocess.run(cmd, check=True, cwd=cwd, env=env)
 
 
 def find_free_port() -> int:

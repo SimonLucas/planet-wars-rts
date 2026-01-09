@@ -72,7 +72,14 @@ def robust_clone_and_build(agent: AgentEntry, base_dir: Path, github_token: str)
 
     gradlew_path.chmod(gradlew_path.stat().st_mode | 0o111)
     try:
-        run_command(["./gradlew", "build"], cwd=repo_dir)
+        # Use Java 22 for building to avoid Kotlin compatibility issues with newer Java versions
+        import os
+        build_env = os.environ.copy()
+        java_22_home = "/Users/eex250/Library/Java/JavaVirtualMachines/corretto-22.0.2/Contents/Home"
+        if Path(java_22_home).exists():
+            build_env["JAVA_HOME"] = java_22_home
+            print(f"🔧 Using Java 22 for build (JAVA_HOME={java_22_home})")
+        run_command(["./gradlew", "build"], cwd=repo_dir, env=build_env)
         print(f"🔨 Build succeeded for {agent.id}")
     except subprocess.CalledProcessError as e:
         print(f"❌ Build failed for {agent.id}: {e}")

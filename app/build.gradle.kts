@@ -5,8 +5,8 @@
 //}
 
 plugins {
-    kotlin("jvm") version "1.9.10"
-    kotlin("plugin.serialization") version "1.9.10"
+    kotlin("jvm") version "2.1.0"
+    kotlin("plugin.serialization") version "2.1.0"
     application
     id("com.github.johnrengelman.shadow") version "8.1.1" // Add shadow plugin
 }
@@ -22,7 +22,7 @@ version = "1.0-SNAPSHOT"
 
 dependencies {
     // Kotlin Standard Library
-    implementation("org.jetbrains.kotlin:kotlin-stdlib:1.9.10")
+    implementation("org.jetbrains.kotlin:kotlin-stdlib:2.1.0")
 
     // Ktor dependencies
     implementation("io.ktor:ktor-server-core:2.3.3")
@@ -73,7 +73,7 @@ tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJ
 
 java {
     toolchain {
-        languageVersion = JavaLanguageVersion.of(20) // Downgraded to Java 20 for compatibility
+        languageVersion = JavaLanguageVersion.of(21) // Java 21 LTS - best compatibility
     }
 }
 
@@ -82,13 +82,19 @@ application {
 }
 
 kotlin {
-    jvmToolchain(20) // Ensure Kotlin targets JVM 20 as well
+    jvmToolchain(21) // Ensure Kotlin targets JVM 21 as well
 }
 
 tasks.register<JavaExec>("runEvaluation") {
     mainClass.set("games.planetwars.runners.EvaluateAgentKt")
     classpath = sourceSets["main"].runtimeClasspath
     args = listOf(project.findProperty("args")?.toString() ?: "49875")
+}
+
+tasks.register<JavaExec>("runUnifiedExample") {
+    mainClass.set("games.planetwars.runners.UnifiedGameRunnerKt")
+    classpath = sourceSets["main"].runtimeClasspath
+    standardInput = System.`in`
 }
 tasks.register<JavaExec>("runRemotePairEvaluation") {
     // Kotlin entry point above
