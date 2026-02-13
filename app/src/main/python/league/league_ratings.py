@@ -90,6 +90,8 @@ def ensure_league(session: Session,
             session.commit()
     return league
 
+
+
 def _get_or_create_rating(session: Session, league_id: int, agent_id: int, mu0: float, sigma0: float) -> Rating:
     r = session.get(Rating, {"agent_id": agent_id, "league_id": league_id})
     if r is None:
@@ -116,8 +118,8 @@ def _apply_trueskill_win(r_winner: Rating, r_loser: Rating, beta: float, tau: fl
     s1p2 = s1 * s1 * (1.0 - (s1 * s1 / c2) * w)
 
     # loser side (symmetry at -t)
-    vL = _v_exceeds_neg(t)
-    wL = _w_exceeds_neg(t)
+    vL = _v_exceeds(t)
+    wL = _w_exceeds(t)
     mu2p = mu2 - (s2 * s2 / c) * vL
     s2p2 = s2 * s2 * (1.0 - (s2 * s2 / c2) * wL)
 
@@ -154,6 +156,10 @@ def process_new_matches_and_update_ratings(session: Session, league_id: int = 1)
         if agent_id not in touched:
             touched[agent_id] = _get_or_create_rating(session, league_id, agent_id, mu0, sigma0)
         return touched[agent_id]
+    from league.league_schema import Agent
+    agent_ids = {a.agent_id for a in session.query(Agent.agent_id).all()}
+    for id in agent_ids:
+        get_r(id)  # pre-populate touched with all agents (ensures all agents have ratings, even if they haven't played)
 
     for m in to_apply:
         r1, r2 = get_r(m.player1_id), get_r(m.player2_id)
@@ -207,16 +213,25 @@ def rebuild_ratings_from_matches(session: Session,
             .filter(Match.league_id == league_id)
             .order_by(Match.started_at.asc().nullsfirst(), Match.match_id.asc())
         )
-    else:
+    elif order == "id":
         q = (
             session.query(Match)
             .filter(Match.league_id == league_id)
             .order_by(Match.match_id.asc())
         )
+    elif order == "random":
+        q = (
+            session.query(Match)
+            .filter(Match.league_id == league_id)
+        )
 
     matches = [m for m in q if (m.winner_id is not None and
                                 m.player1_id != m.player2_id and
                                 m.winner_id in {m.player1_id, m.player2_id})]
+    
+    if order == "random":
+        import random
+        random.shuffle(matches)
     if not matches:
         s["last_processed_match_id"] = 0
         league.settings = s
@@ -231,6 +246,10 @@ def rebuild_ratings_from_matches(session: Session,
             r = _get_or_create_rating(session, league_id, agent_id, mu0, sigma0)
             cache[agent_id] = r
         return r
+    from league.league_schema import Agent
+    agent_ids = {a.agent_id for a in session.query(Agent.agent_id).all()}
+    for id in agent_ids:
+        R(id)  # pre-populate cache with all agents (ensures all agents have ratings, even if they haven't played)
 
     last_id = 0
     for m in matches:
@@ -295,8 +314,8 @@ def _parse_args():
     p = argparse.ArgumentParser(description="Rebuild or update league ratings from match history.")
     p.add_argument("--league", type=int, default=default_league_id, help="League ID to process (default from run_agents_from_db)")
     p.add_argument("--reset", action="store_true", help="Rebuild ratings from scratch (wipes existing league ratings)")
-    p.add_argument("--order", choices=["time", "id"], default="time",
-                   help="When rebuilding, order matches by 'time' (started_at asc) or 'id' (default: time)")
+    p.add_argument("--order", choices=["time", "id", "random"], default="time",
+                   help="When rebuilding, order matches by 'time' (started_at asc), 'id' or 'random' (default: time)")
     p.add_argument("--update", action="store_true",
                    help="Run incremental update (consume matches after last_processed_match_id)")
     # Optional TS overrides (for this run). Use --persist-settings to save.
@@ -325,6 +344,7 @@ def main():
         ensure_league(session, league_id=args.league,
                       settings_overrides=overrides if overrides else None,
                       persist_overrides=args.persist_settings)
+        
 
         if args.update:
             n = process_new_matches_and_update_ratings(session, league_id=args.league)

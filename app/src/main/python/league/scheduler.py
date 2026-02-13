@@ -12,12 +12,12 @@ from league.league_schema import League, Match, Rating
 
 # ---- weights (sane defaults) ----
 W_SIGMA = 0.6      # how much we prioritize uncertain agents
-W_UCB   = 1.0      # underplayed boost
+W_UCB   = 100.0      # underplayed boost
 W_STALE = 0.1      # hasn't played in a while
-W_Q     = 0.7      # pair match quality
-W_SUMS  = 0.3      # (σ_i + σ_j) boost
+W_Q     = 10.0      # pair match quality
+W_SUMS  = 0.0      # (σ_i + σ_j) boost
 W_REPEAT= 0.2      # penalty for repeated pair
-W_MU = 0.5      # how much we prioritize high μ (rating)
+W_MU = 0.1      # how much we prioritize high μ (rating)
 
 P_EXPLOIT = 0.25   # chance to restrict opponent search to top-K by μ
 TOP_K = 8
@@ -35,7 +35,8 @@ def _match_quality(mu1: float, s1: float, mu2: float, s2: float, beta: float) ->
     if c2 <= 0:
         return 0.0
     dmu = mu1 - mu2
-    return math.exp(- (dmu * dmu) / (2.0 * c2))
+    sqrt_term = math.sqrt(2 * (beta ** 2)/c2) 
+    return sqrt_term * math.exp(- (dmu * dmu) / (2.0 * c2))
 
 def _now_utc() -> datetime:
     return datetime.now(timezone.utc)
