@@ -27,14 +27,23 @@ def run_remote_pair_evaluation(port_a: int, port_b: int, games_per_pair: int = 1
     Runs Kotlin runRemotePairEvaluation between two remote servers.
     Returns (full_stdout, avgA, avgB).
     """
+    import os
     root = find_project_root()
     csv_args = f"{port_a},{port_b},{games_per_pair},{timeout_ms}"
     print(f"⚙️  ./gradlew runRemotePairEvaluation --args={csv_args}")
+
+    # Use Java 22 to avoid Kotlin compatibility issues
+    env = os.environ.copy()
+    java_22_home = "/Users/eex250/Library/Java/JavaVirtualMachines/corretto-22.0.2/Contents/Home"
+    if Path(java_22_home).exists():
+        env["JAVA_HOME"] = java_22_home
+
     result = subprocess.run(
         ["./gradlew", "runRemotePairEvaluation", f"--args={csv_args}"],
         cwd=root,
         text=True,
-        capture_output=True
+        capture_output=True,
+        env=env
     )
     if result.returncode != 0:
         raise RuntimeError(f"Gradle run failed:\n{result.stdout}\n{result.stderr}")
