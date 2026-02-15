@@ -15,7 +15,7 @@ from league.run_agents_from_db import LEAGUE_ID
 
 def get_md_table_path() -> Path:
     """Returns a platform-independent default DB path."""
-    md_table_dir = Path.home() / "GitHub/planet-wars-rts-submissions/results/autumn-2025"
+    md_table_dir = Path.home() / "GitHub/planet-wars-rts-submissions/results/spring-2026"
     md_table_dir.mkdir(parents=True, exist_ok=True)
     return md_table_dir / "leaderboard.md"
 
@@ -118,7 +118,7 @@ def main():
         league_name = league.name if league else f"League {args.league}"
 
         # hard override the league name - a quick hack
-        league_name = "IEEE CoG 2025"
+        league_name = "Planet Wars Spring 2026"
 
         rows = fetch_leaderboard_rows(session, args.league)
         md = to_markdown(rows, league_name, limit=args.limit)
