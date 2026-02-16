@@ -86,13 +86,25 @@ data class RoundRobinLeague(
     val runRemoteAgents: Boolean = false, // if true, will run remote agents
     val timeout: Long = 50, // timeout in milliseconds for remote agents
 ) {
-    fun runPair(agent1: PlanetWarsAgent, agent2: PlanetWarsAgent): Map<Player, Int> {
+    fun runPair(agent1: PlanetWarsAgent, agent2: PlanetWarsAgent): Triple<Map<Player, Int>, Map<Player, Double>, Map<Player, Int>> {
         if (runRemoteAgents) {
             val gameRunner = GameRunnerCoRoutines(agent1, agent2, gameParams, timeoutMillis = timeout)
-            return gameRunner.runGames(gamesPerPair)
+            val scores = gameRunner.runGames(gamesPerPair)
+            val avgTimes = gameRunner.getAverageActionTimes()
+            val timeouts = gameRunner.getTimeoutCount()
+            return Triple(scores, avgTimes, timeouts)
         } else {
             val gameRunner = GameRunner(agent1, agent2, gameParams)
-            return gameRunner.runGames(gamesPerPair)
+
+            val avgTimes = mapOf(
+                Player.Player1 to 0.0,
+                Player.Player2 to 0.0,
+            )
+            val timeouts = mapOf(
+                Player.Player1 to 0,
+                Player.Player2 to 0,
+            )
+            return Triple(gameRunner.runGames(gamesPerPair), avgTimes, timeouts)
         }
     }
 
@@ -118,10 +130,15 @@ data class RoundRobinLeague(
                 // update the league scores for each agent
                 val leagueEntry1 = scores[agent1.getAgentType()]!!
                 val leagueEntry2 = scores[agent2.getAgentType()]!!
-                leagueEntry1.points += result[Player.Player1]!!
-                leagueEntry2.points += result[Player.Player2]!!
+                leagueEntry1.points += result.first[Player.Player1]!!
+                leagueEntry2.points += result.first[Player.Player2]!!
+                leagueEntry1.avgActionTime += result.second[Player.Player1]!!
+                leagueEntry2.avgActionTime += result.second[Player.Player2]!!
+                leagueEntry1.timeoutCount += result.third[Player.Player1]!!
+                leagueEntry2.timeoutCount += result.third[Player.Player2]!!
                 leagueEntry1.nGames += gamesPerPair
                 leagueEntry2.nGames += gamesPerPair
+
                 println("$gamesPerPair games took ${(System.currentTimeMillis() - t) / 1000} seconds, ")
             }
         }

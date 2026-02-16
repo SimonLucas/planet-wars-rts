@@ -18,7 +18,7 @@ from sqlalchemy.orm import Session
 from league.init_db import get_default_db_path
 from league.league_schema import Agent, AgentInstance, Match
 from league.scheduler import choose_next_pair
-from league.league_ratings import process_new_matches_and_update_ratings
+from league.league_ratings import process_new_matches_and_update_ratings, ensure_league
 
 # ---------- config ----------
 DB_PATH = get_default_db_path()
@@ -496,6 +496,9 @@ def main(n_pairs: int = 10, league_id: int = LEAGUE_ID) -> None:
         if total_with_instances < 2:
             print("❌ Not enough agents with instances to run matches. Exiting.")
             return
+        process_new_matches_and_update_ratings(session, league_id=league_id)
+        session.commit()
+        
 
         for i in range(n_pairs):
             print(f"\n🔄 Running pair {i + 1}/{n_pairs}...")
@@ -546,7 +549,6 @@ def main(n_pairs: int = 10, league_id: int = LEAGUE_ID) -> None:
             session.commit()
 
             inserted = store_matches(session, league_id=league_id, a=a, b=b, wins_a=wins_a, wins_b=wins_b, draws=draws, game_params=game_params)
-            process_new_matches_and_update_ratings(session, league_id=league_id)
             session.commit()
 
             print(
