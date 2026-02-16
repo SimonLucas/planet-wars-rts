@@ -379,5 +379,5 @@ def main(limit: Optional[int] = 10, restart_existing: bool = False):
 
 
 if __name__ == "__main__":
-    # limit=None to process all; restart_existing=True to force rebuild/restart
-    main(limit=10, restart_existing=True)
+    # limit=None to process all; restart_existing=False to skip healthy containers
+    main(limit=None, restart_existing=False)
