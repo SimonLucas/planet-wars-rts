@@ -8,7 +8,7 @@ from typing import Dict, Tuple, List
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from league.league_schema import League, Match, Rating
+from league.league_schema import AgentInstance, League, Match, Rating
 
 # ---- weights (sane defaults) ----
 W_SIGMA = 0.6      # how much we prioritize uncertain agents
@@ -59,6 +59,17 @@ def load_stats(session: Session, league_id: int) -> tuple[Dict[int, AgentStat], 
         .filter(Rating.league_id == league_id)
         .all()
     )
+    if not ratings:
+        return {}, 0, beta
+
+    # Filter to only agents with valid instances (not placeholder port 123)
+    valid_instances = (
+        session.query(AgentInstance.agent_id)
+        .filter(AgentInstance.port != 123)
+        .all()
+    )
+    valid_agent_ids = {aid for (aid,) in valid_instances}
+    ratings = [r for r in ratings if r.agent_id in valid_agent_ids]
     if not ratings:
         return {}, 0, beta
 
