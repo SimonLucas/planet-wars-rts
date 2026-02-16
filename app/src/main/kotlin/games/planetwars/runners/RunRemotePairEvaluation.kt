@@ -114,4 +114,5 @@ fun main(args: Array<String>) {
     println("TOTAL_GAMES=$totalGames")
     println("GPP=$gamesPerPair")
     println("TIMEOUT_MS=$timeoutMs")
+    println("GAME_PARAMS={\"numPlanets\":${params.numPlanets},\"maxTicks\":${params.maxTicks}}")
 }
