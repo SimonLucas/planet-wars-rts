@@ -4,6 +4,8 @@ import competition_entry.GreedyHeuristicAgent
 import games.planetwars.agents.PlanetWarsAgent
 import games.planetwars.agents.RemoteAgent
 import games.planetwars.agents.evo.SimpleEvoAgent
+import games.planetwars.agents.random.BetterRandomAgent
+import games.planetwars.agents.random.CarefulRandomAgent
 import games.planetwars.core.GameParams
 import json_rmi.SimpleAgent
 import java.io.File
@@ -49,9 +51,11 @@ fun main(args: Array<String>) {
 
     val gameParams = GameParams(numPlanets = 20, maxTicks = 2000)
     val baselineAgents = SamplePlayerLists().getRandomTrio()
-//    baselineAgents.clear()
+    baselineAgents.clear()
+    baselineAgents.add(BetterRandomAgent())
+    baselineAgents.add(CarefulRandomAgent())
     baselineAgents.add(GreedyHeuristicAgent())
-    baselineAgents.add(SimpleEvoAgent())
+//    baselineAgents.add(SimpleEvoAgent())
     val remoteAgent = RemoteAgent("<unused - name retrieved from remoteAgent>", port = remotePort)
     val testAgentName = waitForAgentType(remoteAgent)
     val results = mutableListOf<Triple<String, Double, Int>>()
