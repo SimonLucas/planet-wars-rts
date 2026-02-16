@@ -144,12 +144,6 @@ def process_new_matches_and_update_ratings(session: Session, league_id: int = 1)
         .filter(Match.match_id > last_id)
         .order_by(Match.match_id.asc())
     )
-    # keep only clean decisive matches
-    to_apply = [m for m in q if (m.winner_id is not None and
-                                 m.player1_id != m.player2_id and
-                                 m.winner_id in {m.player1_id, m.player2_id})]
-    if not to_apply:
-        return 0
 
     touched: Dict[int, Rating] = {}
     def get_r(agent_id: int) -> Rating:
@@ -161,6 +155,13 @@ def process_new_matches_and_update_ratings(session: Session, league_id: int = 1)
     for id in agent_ids:
         get_r(id)  # pre-populate touched with all agents (ensures all agents have ratings, even if they haven't played)
 
+    # keep only clean decisive matches
+    to_apply = [m for m in q if (m.winner_id is not None and
+                                 m.player1_id != m.player2_id and
+                                 m.winner_id in {m.player1_id, m.player2_id})]
+    if not to_apply:
+        return 0
+    
     for m in to_apply:
         r1, r2 = get_r(m.player1_id), get_r(m.player2_id)
         if m.winner_id == m.player1_id:

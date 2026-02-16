@@ -78,6 +78,11 @@ fun main(args: Array<String>) {
     val winsB = ((winRateB / 100.0) * gamesB).roundToInt()
     val draws = (totalGames - winsA - winsB).coerceAtLeast(0)
 
+    val timeoutCountA = scoreA?.timeoutCount ?: 0
+    val timeoutCountB = scoreB?.timeoutCount ?: 0
+    val avgActionTimeA = if (gamesA > 0) scoreA?.avgActionTime ?: 0.0 else 0.0
+    val avgActionTimeB = if (gamesB > 0) scoreB?.avgActionTime ?: 0.0 else 0.0
+
     val markdown = buildString {
         append("### Remote Pair Evaluation\n\n")
         append("| Agent | Port | Win Rate % | Games |\n")
@@ -87,6 +92,10 @@ fun main(args: Array<String>) {
         append("_gamesPerPair=$gamesPerPair  totalGames=$totalGames\n\n")
         append("AVG=${"%.1f".format(winRateA)}\n")
         append("AVG_OTHER=${"%.1f".format(winRateB)}\n")
+        append("Average Action Time: ${"%.2f".format(avgActionTimeA)} ms (timeouts: $timeoutCountA)\n")
+        append("Average Action Time Other: ${"%.2f".format(avgActionTimeB)} ms (timeouts: $timeoutCountB)\n")
+        append("Timeout Count A: $timeoutCountA\n")
+        append("Timeout Count B: $timeoutCountB\n")
     }
 
 //    val outDir = File("results/sample")

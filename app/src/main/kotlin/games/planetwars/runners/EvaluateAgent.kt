@@ -59,6 +59,7 @@ fun main(args: Array<String>) {
     val remoteAgent = RemoteAgent("<unused - name retrieved from remoteAgent>", port = remotePort)
     val testAgentName = waitForAgentType(remoteAgent)
     val results = mutableListOf<Triple<String, Double, Int>>()
+    val timeResults = mutableListOf<Triple<String, Double, Int>>()
 
     for (baseline in baselineAgents) {
         println("Running $testAgentName against sample: ${baseline.getAgentType()}... ")
@@ -74,12 +75,17 @@ fun main(args: Array<String>) {
         val testEntry = scores[testAgentName]
         if (testEntry != null) {
             results.add(Triple(baseline.getAgentType(), testEntry.winRate(), testEntry.nGames))
+            timeResults.add(Triple(baseline.getAgentType(), testEntry.avgActionTime, testEntry.timeoutCount))
         }
     }
 
     val totalPoints = results.sumOf { it.second * it.third / 100.0 }
     val totalGames = results.sumOf { it.third }
     val avgWinRate = if (totalGames > 0) (100 * totalPoints / totalGames) else 0.0
+    val avgActionTime = if (totalGames > 0) timeResults.sumOf { it.second * it.third } / totalGames else 0.0
+    val totalTimeouts = timeResults.sumOf { it.third }
+
+
 
     val markdown = buildString {
         append("### $testAgentName Evaluation\n\n")
@@ -90,6 +96,8 @@ fun main(args: Array<String>) {
         }
         append("| **Overall Average** | **${"%.1f".format(avgWinRate)}** | **$totalGames** |\n\n")
         append("AVG=${"%.1f".format(avgWinRate)}\n")
+        append("Average Action Time: ${"%.2f".format(avgActionTime)} ms\n\n")
+        append("Total Timeouts: $totalTimeouts\n")
     }
 
     val outputDir = File("results/sample")

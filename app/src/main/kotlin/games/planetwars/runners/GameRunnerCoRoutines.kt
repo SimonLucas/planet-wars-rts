@@ -22,6 +22,12 @@ data class GameRunnerCoRoutines(
     private var latestAction1: Action = Action.doNothing()
     private var latestAction2: Action = Action.doNothing()
 
+    //Store time taken for each agent to compute their actions at each time step
+    private var agent1ActionTimes = mutableListOf<Long>()
+    private var agent2ActionTimes = mutableListOf<Long>()
+
+    private var totalGameTicks = 0
+
     fun runGame(): ForwardModel {
         if (gameParams.newMapEachRun) {
             gameState = GameStateFactory(gameParams).createGame()
@@ -35,6 +41,7 @@ data class GameRunnerCoRoutines(
                 forwardModel.step(actions)
             }
         }
+        totalGameTicks += forwardModel.state.tick
         return forwardModel
     }
 
@@ -99,6 +106,23 @@ data class GameRunnerCoRoutines(
         println(forwardModel.statusString())
         println("Time per game: ${timePerGame.toDouble() / nGames} ms")
         return scores
+    }
+
+    fun getAverageActionTimes(): Map<Player, Double> {
+        val avgTime1 = if (agent1ActionTimes.isNotEmpty()) agent1ActionTimes.average() else 0.0
+        val avgTime2 = if (agent2ActionTimes.isNotEmpty()) agent2ActionTimes.average() else 0.0
+        return mapOf(
+            Player.Player1 to avgTime1,
+            Player.Player2 to avgTime2
+        )
+    }
+    fun getTimeoutCount(): Map<Player, Int> {
+        val timeoutCount1 = agent1ActionTimes.count { it > timeoutMillis }
+        val timeoutCount2 = agent2ActionTimes.count { it > timeoutMillis }
+        return mapOf(
+            Player.Player1 to timeoutCount1,
+            Player.Player2 to timeoutCount2
+        )
     }
 }
 
