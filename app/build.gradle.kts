@@ -1,14 +1,10 @@
-//plugins {
-//    kotlin("jvm") version "1.9.10"
-//    kotlin("plugin.serialization") version "1.9.10"
-//    application
-//}
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 plugins {
     kotlin("jvm") version "2.1.0"
     kotlin("plugin.serialization") version "2.1.0"
     application
-    id("com.github.johnrengelman.shadow") version "8.1.1" // Add shadow plugin
+    id("com.github.johnrengelman.shadow") version "8.1.1"
 }
 
 
@@ -58,17 +54,11 @@ tasks.withType<Jar> {
     }
 }
 
-tasks.named<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar>("shadowJar") {
+tasks.named<ShadowJar>("shadowJar") {
     archiveBaseName.set("client-server")
     archiveClassifier.set("")
     archiveVersion.set("")
 }
-
-//tasks.withType<com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar> {
-//    archiveBaseName.set("client-server")
-//    archiveClassifier.set("")
-//    archiveVersion.set("")
-//}
 
 
 java {
