@@ -94,8 +94,6 @@ fun main(args: Array<String>) {
         append("AVG_OTHER=${"%.1f".format(winRateB)}\n")
         append("Average Action Time: ${"%.2f".format(avgActionTimeA)} ms (timeouts: $timeoutCountA)\n")
         append("Average Action Time Other: ${"%.2f".format(avgActionTimeB)} ms (timeouts: $timeoutCountB)\n")
-        append("Timeout Count A: $timeoutCountA\n")
-        append("Timeout Count B: $timeoutCountB\n")
     }
 
 //    val outDir = File("results/sample")

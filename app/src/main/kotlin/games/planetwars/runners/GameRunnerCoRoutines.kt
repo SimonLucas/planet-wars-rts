@@ -41,7 +41,7 @@ data class GameRunnerCoRoutines(
                 forwardModel.step(actions)
             }
         }
-        totalGameTicks += forwardModel.state.tick
+        totalGameTicks += forwardModel.state.gameTick
         return forwardModel
     }
 
