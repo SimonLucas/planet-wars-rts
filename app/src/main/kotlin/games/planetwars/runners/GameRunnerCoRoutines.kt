@@ -63,13 +63,23 @@ data class GameRunnerCoRoutines(
                 latestAction2
             }
 
-            // Only wait for timeoutMillis for the agent actions, but do not cancel if they take longer
-            val action1Result = withTimeoutOrNull(timeoutMillis) { action1.await() } ?: doNothingAction
-            val action2Result = withTimeoutOrNull(timeoutMillis) { action2.await() } ?: doNothingAction
+            // Measure time and get result for agent 1
+            var action1Result: Action? = null
+            val time1 = measureTimeMillis {
+                action1Result = withTimeoutOrNull(timeoutMillis) { action1.await() }
+            }
+            agent1ActionTimes.add(time1)
+
+            // Measure time and get result for agent 2
+            var action2Result: Action? = null
+            val time2 = measureTimeMillis {
+                action2Result = withTimeoutOrNull(timeoutMillis) { action2.await() }
+            }
+            agent2ActionTimes.add(time2)
 
             mapOf(
-                Player.Player1 to action1Result,
-                Player.Player2 to action2Result
+                Player.Player1 to (action1Result ?: doNothingAction),
+                Player.Player2 to (action2Result ?: doNothingAction)
             )
         } finally {
             // Ensure any remaining jobs are cancelled when the game terminates
