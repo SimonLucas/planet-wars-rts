@@ -82,7 +82,7 @@ fun main(args: Array<String>) {
     val totalPoints = results.sumOf { it.second * it.third / 100.0 }
     val totalGames = results.sumOf { it.third }
     val avgWinRate = if (totalGames > 0) (100 * totalPoints / totalGames) else 0.0
-    val avgActionTime = if (totalGames > 0) timeResults.sumOf { it.second * it.third } / totalGames else 0.0
+    val avgActionTime = timeResults.sumOf { it.second } / timeResults.size
     val totalTimeouts = timeResults.sumOf { it.third }
 
 
