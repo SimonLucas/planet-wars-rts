@@ -343,12 +343,17 @@ def post_results(github_token: str, issue_number: int):
                          github_token)
 
 
-def stop_and_cleanup_container(agent_id: str, github_token: str, issue_number: int):
-    container_name = f"container-{agent_id}"
-    run_command(["podman", "stop", container_name])
-    run_command(["podman", "rm", container_name])
-    comment_on_issue("SimonLucas/planet-wars-rts-submissions", issue_number,
-                     "✅ Evaluation complete. Stopping container.", github_token)
+def stop_and_cleanup_container(agent_id: str, short_commit: str, github_token: str, issue_number: int):
+    container_name = f"container-{agent_id}-{short_commit}"
+    try:
+        run_command(["podman", "stop", container_name])
+        run_command(["podman", "rm", container_name])
+        comment_on_issue("SimonLucas/planet-wars-rts-submissions", issue_number,
+                         "✅ Evaluation complete. Container stopped and removed.", github_token)
+    except subprocess.CalledProcessError as e:
+        # Container might already be stopped/removed, or never started - that's ok
+        comment_on_issue("SimonLucas/planet-wars-rts-submissions", issue_number,
+                         f"⚠️ Container cleanup: {e} (This is usually harmless)", github_token)
 
 
 def process_issue(issue: dict, base_dir: Path, github_token: str, timeout_seconds: int = 600) -> bool:
@@ -386,7 +391,8 @@ def process_issue(issue: dict, base_dir: Path, github_token: str, timeout_second
 
     # Step 6: Cleanup
     try:
-        stop_and_cleanup_container(agent.id, github_token, issue_number)
+        short_commit = agent.commit[:7]
+        stop_and_cleanup_container(agent.id, short_commit, github_token, issue_number)
     except Exception as e:
         comment_on_issue("SimonLucas/planet-wars-rts-submissions", issue_number,
                          f"⚠️ Cleanup failed: {e}", github_token)
