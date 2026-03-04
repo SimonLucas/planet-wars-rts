@@ -58,13 +58,15 @@ def sanitize_image_tag(name: str) -> str:
         raise ValueError("Sanitized image tag is empty")
     return name
 
-def detect_project_type(repo_dir: Path) -> str:
+def detect_project_type(repo_dir: Path) -> tuple[str, bool]:
     """
     Detect whether this is a Kotlin/Java or Python project by examining the Dockerfile.
     The Dockerfile is the source of truth for how to build the submission.
-    Returns: 'gradle', 'python', 'dockerfile-only', or 'unknown'
+    Returns: (project_type, needs_pre_build)
+      - project_type: 'gradle', 'python', 'dockerfile-only', or 'unknown'
+      - needs_pre_build: True if we need to run gradle/pip before Docker build
     """
-    print(f"🔍 [v3.0] Detecting project type in: {repo_dir}")
+    print(f"🔍 [v4.0] Detecting project type in: {repo_dir}")
     print(f"  - gradlew exists: {(repo_dir / 'gradlew').exists()}")
     print(f"  - requirements.txt exists: {(repo_dir / 'requirements.txt').exists()}")
     print(f"  - pyproject.toml exists: {(repo_dir / 'pyproject.toml').exists()}")
@@ -77,39 +79,63 @@ def detect_project_type(repo_dir: Path) -> str:
             dockerfile_content = dockerfile_path.read_text().lower()
             print(f"  📄 Reading Dockerfile to determine build requirements...")
 
+            # Check if Dockerfile is self-contained (multi-stage build)
+            has_multistage = 'as builder' in dockerfile_content or 'as build' in dockerfile_content
+            has_gradle_in_docker = 'from gradle' in dockerfile_content or 'run gradle' in dockerfile_content or 'run ./gradlew' in dockerfile_content
+
+            # Check if Dockerfile expects pre-built artifacts
+            expects_prebuilt_jar = 'copy app/build/libs/' in dockerfile_content
+            expects_prebuilt_python = False  # Python typically doesn't need pre-build
+
             # Look for Python indicators
             python_indicators = ['pip install', 'requirements.txt', 'python', 'pyproject.toml', 'poetry']
             has_python = any(indicator in dockerfile_content for indicator in python_indicators)
 
             # Look for Gradle indicators
             gradle_indicators = ['gradle', './gradlew', 'build.gradle']
-            has_gradle = any(indicator in dockerfile_content for indicator in gradle_indicators)
+            has_gradle_ref = any(indicator in dockerfile_content for indicator in gradle_indicators)
 
+            print(f"  - Dockerfile multi-stage build: {has_multistage}")
+            print(f"  - Dockerfile has gradle build: {has_gradle_in_docker}")
+            print(f"  - Dockerfile expects pre-built JAR: {expects_prebuilt_jar}")
             print(f"  - Dockerfile contains Python indicators: {has_python}")
-            print(f"  - Dockerfile contains Gradle indicators: {has_gradle}")
 
-            # Determine type based on Dockerfile content
-            if has_gradle:
-                detected = "gradle"
-            elif has_python:
+            # Determine type and whether pre-build is needed
+            if has_python:
                 detected = "python"
+                needs_pre_build = False  # Python submissions are self-contained
+            elif has_gradle_in_docker:
+                detected = "gradle-self-contained"
+                needs_pre_build = False  # Dockerfile handles gradle build
+            elif expects_prebuilt_jar and (repo_dir / "gradlew").exists():
+                detected = "gradle-legacy"
+                needs_pre_build = True  # Old style: needs gradle build before Docker
+            elif has_gradle_ref:
+                detected = "gradle"
+                needs_pre_build = False  # Assume self-contained if not clearly legacy
             else:
                 detected = "dockerfile-only"
+                needs_pre_build = False
+
         except Exception as e:
             print(f"  ⚠️ Could not read Dockerfile: {e}")
             # Fallback to file-based detection
             if (repo_dir / "gradlew").exists():
-                detected = "gradle"
+                detected = "gradle-legacy"
+                needs_pre_build = True
             elif (repo_dir / "requirements.txt").exists() or (repo_dir / "pyproject.toml").exists():
                 detected = "python"
+                needs_pre_build = False
             else:
                 detected = "dockerfile-only"
+                needs_pre_build = False
     else:
         # No Dockerfile - this will likely fail validation later
         detected = "unknown"
+        needs_pre_build = False
 
-    print(f"  ✅ Detected type: {detected}")
-    return detected
+    print(f"  ✅ Detected type: {detected}, needs pre-build: {needs_pre_build}")
+    return detected, needs_pre_build
 
 
 def validate_submission(repo_dir: Path, project_type: str) -> tuple[bool, str]:
@@ -131,52 +157,46 @@ def validate_submission(repo_dir: Path, project_type: str) -> tuple[bool, str]:
     return True, "OK"
 
 
-def build_project(repo_dir: Path, project_type: str, github_token: str, issue_number: int) -> bool:
+def build_project(repo_dir: Path, project_type: str, needs_pre_build: bool, github_token: str, issue_number: int) -> bool:
     """
     Build the project based on its type.
+    Supports both legacy (pre-build) and modern (self-contained Dockerfile) submissions.
     Returns: True if build succeeded, False otherwise
     """
     repo = "SimonLucas/planet-wars-rts-submissions"
-    print(f"🔨 [v3.0] Building project with type: {project_type}")
+    print(f"🔨 [v4.0] Processing project with type: {project_type}, needs_pre_build: {needs_pre_build}")
 
-    if project_type == "gradle":
+    # Validate Dockerfile exists
+    is_valid, error_msg = validate_submission(repo_dir, project_type)
+    if not is_valid:
+        comment_on_issue(repo, issue_number, f"❌ Validation failed: {error_msg}", github_token)
+        return False
+
+    if needs_pre_build:
+        # Legacy mode: Run gradle build before Docker build (backward compatibility)
+        comment_on_issue(repo, issue_number,
+            f"📦 Detected **{project_type}** project (legacy mode). Running pre-build...", github_token)
+
         gradlew_path = repo_dir / "gradlew"
         if not gradlew_path.exists():
-            comment_on_issue(repo, issue_number, "❌ Gradle wrapper not found in repo.", github_token)
+            comment_on_issue(repo, issue_number, "❌ Gradle wrapper not found for legacy build.", github_token)
             return False
 
         gradlew_path.chmod(gradlew_path.stat().st_mode | 0o111)  # Ensure executable
         try:
             run_command(["./gradlew", "build"], cwd=repo_dir)
-            comment_on_issue(repo, issue_number, "🔨 Gradle project built successfully.", github_token)
+            comment_on_issue(repo, issue_number,
+                "🔨 Pre-build completed. Docker will use pre-built artifacts.", github_token)
             return True
         except subprocess.CalledProcessError as e:
-            comment_on_issue(repo, issue_number, f"❌ Gradle build failed: {e}", github_token)
+            comment_on_issue(repo, issue_number, f"❌ Pre-build failed: {e}", github_token)
             return False
-
-    elif project_type == "python":
-        print("🐍 PYTHON PROJECT DETECTED - SKIPPING GRADLE BUILD")
-        comment_on_issue(repo, issue_number, "🐍 Python project detected. Skipping Gradle build.", github_token)
-        # Validate that Dockerfile exists
-        is_valid, error_msg = validate_submission(repo_dir, project_type)
-        if not is_valid:
-            comment_on_issue(repo, issue_number, f"❌ Validation failed: {error_msg}", github_token)
-            return False
-        comment_on_issue(repo, issue_number, "✅ Python project validated successfully.", github_token)
-        return True
-
-    elif project_type == "dockerfile-only":
-        comment_on_issue(repo, issue_number, "🐳 Dockerfile-only project detected.", github_token)
-        is_valid, error_msg = validate_submission(repo_dir, project_type)
-        if not is_valid:
-            comment_on_issue(repo, issue_number, f"❌ Validation failed: {error_msg}", github_token)
-            return False
-        return True
-
     else:
+        # Modern mode: Self-contained Dockerfile handles everything
         comment_on_issue(repo, issue_number,
-            "❌ Unknown project type. Expected gradlew, requirements.txt, or Dockerfile.", github_token)
-        return False
+            f"📦 Detected **{project_type}** project (self-contained). Docker will handle all building.", github_token)
+        comment_on_issue(repo, issue_number, "✅ Validation passed.", github_token)
+        return True
 
 
 def extract_and_normalize_agent_data(issue: dict, github_token: str) -> AgentEntry | None:
@@ -231,13 +251,13 @@ def clone_and_build_repo(agent: AgentEntry, base_dir: Path, github_token: str, i
 
     # Detect and build based on project type
     print("=" * 60)
-    print("🚀 [v3.0] DOCKERFILE-BASED LANGUAGE DETECTION")
+    print("🚀 [v4.0] BACKWARD-COMPATIBLE DOCKERFILE ARCHITECTURE")
     print("=" * 60)
-    project_type = detect_project_type(repo_dir)
-    print(f"📋 Project type detected: {project_type}")
+    project_type, needs_pre_build = detect_project_type(repo_dir)
+    print(f"📋 Project type detected: {project_type}, needs_pre_build: {needs_pre_build}")
     comment_on_issue(repo, issue_number, f"📋 Detected project type: **{project_type}**", github_token)
 
-    if not build_project(repo_dir, project_type, github_token, issue_number):
+    if not build_project(repo_dir, project_type, needs_pre_build, github_token, issue_number):
         return None
 
     return repo_dir

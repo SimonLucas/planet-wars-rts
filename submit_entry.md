@@ -37,17 +37,29 @@ Each submission must:
 
 Your Kotlin or Java project must produce a single `.jar` file that runs the WebSocket server.
 
-### Example `Dockerfile`
+### Example `Dockerfile` (Self-Contained Multi-Stage Build - Recommended)
+
+**Important:** Your Dockerfile should be **self-contained** and handle all building internally. This is the recommended approach:
 
 ```dockerfile
-# Use Java 20
+# ---------- Stage 1: Build with Gradle ----------
+FROM gradle:8.5.0-jdk20 AS builder
+
+WORKDIR /home/gradle/project
+
+# Copy entire project into container
+COPY . .
+
+# Run Gradle build (skip tests for speed)
+RUN gradle :app:build -x test
+
+# ---------- Stage 2: Runtime with Java only ----------
 FROM eclipse-temurin:20-jdk
 
-# Set the working directory
 WORKDIR /app
 
-# Copy the compiled jar (adjust path to match your Gradle build)
-COPY app/build/libs/client-server.jar app.jar
+# Copy JAR from builder stage
+COPY --from=builder /home/gradle/project/app/build/libs/*.jar app.jar
 
 # Expose WebSocket port
 EXPOSE 8080
@@ -55,6 +67,20 @@ EXPOSE 8080
 # Run the agent
 CMD ["java", "-jar", "app.jar"]
 ```
+
+### Legacy Dockerfile (Still Supported)
+
+For backward compatibility, the simple Dockerfile is still supported (expects pre-built JAR):
+
+```dockerfile
+FROM eclipse-temurin:20-jdk
+WORKDIR /app
+COPY app/build/libs/client-server.jar app.jar
+EXPOSE 8080
+CMD ["java", "-jar", "app.jar"]
+```
+
+**Note:** With this approach, the submission system will automatically run `./gradlew build` before building the Docker image. However, we recommend migrating to the self-contained approach above.
 
 In your Gradle build file (`build.gradle.kts`), make sure to specify the correct entry point:
 
