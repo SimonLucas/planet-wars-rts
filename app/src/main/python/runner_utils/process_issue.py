@@ -60,22 +60,52 @@ def sanitize_image_tag(name: str) -> str:
 
 def detect_project_type(repo_dir: Path) -> str:
     """
-    Detect whether this is a Kotlin/Java or Python project.
+    Detect whether this is a Kotlin/Java or Python project by examining the Dockerfile.
+    The Dockerfile is the source of truth for how to build the submission.
     Returns: 'gradle', 'python', 'dockerfile-only', or 'unknown'
     """
-    print(f"🔍 [v2.0] Detecting project type in: {repo_dir}")
+    print(f"🔍 [v3.0] Detecting project type in: {repo_dir}")
     print(f"  - gradlew exists: {(repo_dir / 'gradlew').exists()}")
     print(f"  - requirements.txt exists: {(repo_dir / 'requirements.txt').exists()}")
     print(f"  - pyproject.toml exists: {(repo_dir / 'pyproject.toml').exists()}")
     print(f"  - Dockerfile exists: {(repo_dir / 'Dockerfile').exists()}")
 
-    if (repo_dir / "gradlew").exists():
-        detected = "gradle"
-    elif (repo_dir / "requirements.txt").exists() or (repo_dir / "pyproject.toml").exists():
-        detected = "python"
-    elif (repo_dir / "Dockerfile").exists():
-        detected = "dockerfile-only"
+    # Check Dockerfile first - it's the source of truth
+    dockerfile_path = repo_dir / "Dockerfile"
+    if dockerfile_path.exists():
+        try:
+            dockerfile_content = dockerfile_path.read_text().lower()
+            print(f"  📄 Reading Dockerfile to determine build requirements...")
+
+            # Look for Python indicators
+            python_indicators = ['pip install', 'requirements.txt', 'python', 'pyproject.toml', 'poetry']
+            has_python = any(indicator in dockerfile_content for indicator in python_indicators)
+
+            # Look for Gradle indicators
+            gradle_indicators = ['gradle', './gradlew', 'build.gradle']
+            has_gradle = any(indicator in dockerfile_content for indicator in gradle_indicators)
+
+            print(f"  - Dockerfile contains Python indicators: {has_python}")
+            print(f"  - Dockerfile contains Gradle indicators: {has_gradle}")
+
+            # Determine type based on Dockerfile content
+            if has_gradle:
+                detected = "gradle"
+            elif has_python:
+                detected = "python"
+            else:
+                detected = "dockerfile-only"
+        except Exception as e:
+            print(f"  ⚠️ Could not read Dockerfile: {e}")
+            # Fallback to file-based detection
+            if (repo_dir / "gradlew").exists():
+                detected = "gradle"
+            elif (repo_dir / "requirements.txt").exists() or (repo_dir / "pyproject.toml").exists():
+                detected = "python"
+            else:
+                detected = "dockerfile-only"
     else:
+        # No Dockerfile - this will likely fail validation later
         detected = "unknown"
 
     print(f"  ✅ Detected type: {detected}")
@@ -107,7 +137,7 @@ def build_project(repo_dir: Path, project_type: str, github_token: str, issue_nu
     Returns: True if build succeeded, False otherwise
     """
     repo = "SimonLucas/planet-wars-rts-submissions"
-    print(f"🔨 [v2.0] Building project with type: {project_type}")
+    print(f"🔨 [v3.0] Building project with type: {project_type}")
 
     if project_type == "gradle":
         gradlew_path = repo_dir / "gradlew"
@@ -201,7 +231,7 @@ def clone_and_build_repo(agent: AgentEntry, base_dir: Path, github_token: str, i
 
     # Detect and build based on project type
     print("=" * 60)
-    print("🚀 [v2.0] USING NEW LANGUAGE DETECTION CODE")
+    print("🚀 [v3.0] DOCKERFILE-BASED LANGUAGE DETECTION")
     print("=" * 60)
     project_type = detect_project_type(repo_dir)
     print(f"📋 Project type detected: {project_type}")
