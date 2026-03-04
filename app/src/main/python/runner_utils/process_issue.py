@@ -63,14 +63,23 @@ def detect_project_type(repo_dir: Path) -> str:
     Detect whether this is a Kotlin/Java or Python project.
     Returns: 'gradle', 'python', 'dockerfile-only', or 'unknown'
     """
+    print(f"🔍 [v2.0] Detecting project type in: {repo_dir}")
+    print(f"  - gradlew exists: {(repo_dir / 'gradlew').exists()}")
+    print(f"  - requirements.txt exists: {(repo_dir / 'requirements.txt').exists()}")
+    print(f"  - pyproject.toml exists: {(repo_dir / 'pyproject.toml').exists()}")
+    print(f"  - Dockerfile exists: {(repo_dir / 'Dockerfile').exists()}")
+
     if (repo_dir / "gradlew").exists():
-        return "gradle"
+        detected = "gradle"
     elif (repo_dir / "requirements.txt").exists() or (repo_dir / "pyproject.toml").exists():
-        return "python"
+        detected = "python"
     elif (repo_dir / "Dockerfile").exists():
-        return "dockerfile-only"
+        detected = "dockerfile-only"
     else:
-        return "unknown"
+        detected = "unknown"
+
+    print(f"  ✅ Detected type: {detected}")
+    return detected
 
 
 def validate_submission(repo_dir: Path, project_type: str) -> tuple[bool, str]:
@@ -98,6 +107,7 @@ def build_project(repo_dir: Path, project_type: str, github_token: str, issue_nu
     Returns: True if build succeeded, False otherwise
     """
     repo = "SimonLucas/planet-wars-rts-submissions"
+    print(f"🔨 [v2.0] Building project with type: {project_type}")
 
     if project_type == "gradle":
         gradlew_path = repo_dir / "gradlew"
@@ -115,6 +125,7 @@ def build_project(repo_dir: Path, project_type: str, github_token: str, issue_nu
             return False
 
     elif project_type == "python":
+        print("🐍 PYTHON PROJECT DETECTED - SKIPPING GRADLE BUILD")
         comment_on_issue(repo, issue_number, "🐍 Python project detected. Skipping Gradle build.", github_token)
         # Validate that Dockerfile exists
         is_valid, error_msg = validate_submission(repo_dir, project_type)
@@ -189,7 +200,11 @@ def clone_and_build_repo(agent: AgentEntry, base_dir: Path, github_token: str, i
         comment_on_issue(repo, issue_number, f"📌 Checked out commit `{agent.commit}`", github_token)
 
     # Detect and build based on project type
+    print("=" * 60)
+    print("🚀 [v2.0] USING NEW LANGUAGE DETECTION CODE")
+    print("=" * 60)
     project_type = detect_project_type(repo_dir)
+    print(f"📋 Project type detected: {project_type}")
     comment_on_issue(repo, issue_number, f"📋 Detected project type: **{project_type}**", github_token)
 
     if not build_project(repo_dir, project_type, github_token, issue_number):
