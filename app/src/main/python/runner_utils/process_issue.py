@@ -58,6 +58,86 @@ def sanitize_image_tag(name: str) -> str:
         raise ValueError("Sanitized image tag is empty")
     return name
 
+def detect_project_type(repo_dir: Path) -> str:
+    """
+    Detect whether this is a Kotlin/Java or Python project.
+    Returns: 'gradle', 'python', 'dockerfile-only', or 'unknown'
+    """
+    if (repo_dir / "gradlew").exists():
+        return "gradle"
+    elif (repo_dir / "requirements.txt").exists() or (repo_dir / "pyproject.toml").exists():
+        return "python"
+    elif (repo_dir / "Dockerfile").exists():
+        return "dockerfile-only"
+    else:
+        return "unknown"
+
+
+def validate_submission(repo_dir: Path, project_type: str) -> tuple[bool, str]:
+    """
+    Validate that submission has required files.
+    Returns: (is_valid, error_message)
+    """
+    if not (repo_dir / "Dockerfile").exists():
+        return False, "Missing Dockerfile"
+
+    # Check Dockerfile exposes port 8080
+    try:
+        dockerfile_content = (repo_dir / "Dockerfile").read_text()
+        if "EXPOSE 8080" not in dockerfile_content and "8080" not in dockerfile_content:
+            return False, "Dockerfile must expose port 8080"
+    except Exception as e:
+        return False, f"Could not read Dockerfile: {e}"
+
+    return True, "OK"
+
+
+def build_project(repo_dir: Path, project_type: str, github_token: str, issue_number: int) -> bool:
+    """
+    Build the project based on its type.
+    Returns: True if build succeeded, False otherwise
+    """
+    repo = "SimonLucas/planet-wars-rts-submissions"
+
+    if project_type == "gradle":
+        gradlew_path = repo_dir / "gradlew"
+        if not gradlew_path.exists():
+            comment_on_issue(repo, issue_number, "❌ Gradle wrapper not found in repo.", github_token)
+            return False
+
+        gradlew_path.chmod(gradlew_path.stat().st_mode | 0o111)  # Ensure executable
+        try:
+            run_command(["./gradlew", "build"], cwd=repo_dir)
+            comment_on_issue(repo, issue_number, "🔨 Gradle project built successfully.", github_token)
+            return True
+        except subprocess.CalledProcessError as e:
+            comment_on_issue(repo, issue_number, f"❌ Gradle build failed: {e}", github_token)
+            return False
+
+    elif project_type == "python":
+        comment_on_issue(repo, issue_number, "🐍 Python project detected. Skipping Gradle build.", github_token)
+        # Validate that Dockerfile exists
+        is_valid, error_msg = validate_submission(repo_dir, project_type)
+        if not is_valid:
+            comment_on_issue(repo, issue_number, f"❌ Validation failed: {error_msg}", github_token)
+            return False
+        comment_on_issue(repo, issue_number, "✅ Python project validated successfully.", github_token)
+        return True
+
+    elif project_type == "dockerfile-only":
+        comment_on_issue(repo, issue_number, "🐳 Dockerfile-only project detected.", github_token)
+        is_valid, error_msg = validate_submission(repo_dir, project_type)
+        if not is_valid:
+            comment_on_issue(repo, issue_number, f"❌ Validation failed: {error_msg}", github_token)
+            return False
+        return True
+
+    else:
+        comment_on_issue(repo, issue_number,
+            "❌ Unknown project type. Expected gradlew, requirements.txt, or Dockerfile.", github_token)
+        return False
+
+
 def extract_and_normalize_agent_data(issue: dict, github_token: str) -> AgentEntry | None:
     repo = "SimonLucas/planet-wars-rts-submissions"
     issue_number = issue["number"]
@@ -88,9 +168,6 @@ def clone_and_build_repo(agent: AgentEntry, base_dir: Path, github_token: str, i
     short_commit = agent.commit[:7]
     repo_dir = base_dir / f"{agent.id}-{short_commit}"
 
-    # repo_dir = base_dir / agent.id
-    gradlew_path = repo_dir / "gradlew"
-
     # Remove broken clone dirs
     if repo_dir.exists() and not (repo_dir / ".git").exists():
         shutil.rmtree(repo_dir)
@@ -111,13 +188,12 @@ def clone_and_build_repo(agent: AgentEntry, base_dir: Path, github_token: str, i
         run_command(["git", "checkout", agent.commit], cwd=repo_dir)
         comment_on_issue(repo, issue_number, f"📌 Checked out commit `{agent.commit}`", github_token)
 
-    if not gradlew_path.exists():
-        comment_on_issue(repo, issue_number, "❌ Gradle wrapper not found in repo.", github_token)
-        return None
+    # Detect and build based on project type
+    project_type = detect_project_type(repo_dir)
+    comment_on_issue(repo, issue_number, f"📋 Detected project type: **{project_type}**", github_token)
 
-    gradlew_path.chmod(gradlew_path.stat().st_mode | 0o111)  # Ensure executable
-    run_command(["./gradlew", "build"], cwd=repo_dir)
-    comment_on_issue(repo, issue_number, "🔨 Project built successfully.", github_token)
+    if not build_project(repo_dir, project_type, github_token, issue_number):
+        return None
 
     return repo_dir
 
