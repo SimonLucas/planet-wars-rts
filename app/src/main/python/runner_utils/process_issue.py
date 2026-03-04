@@ -183,14 +183,38 @@ def build_project(repo_dir: Path, project_type: str, needs_pre_build: bool, gith
             return False
 
         gradlew_path.chmod(gradlew_path.stat().st_mode | 0o111)  # Ensure executable
-        try:
-            run_command(["./gradlew", "build"], cwd=repo_dir)
-            comment_on_issue(repo, issue_number,
-                "🔨 Pre-build completed. Docker will use pre-built artifacts.", github_token)
-            return True
-        except subprocess.CalledProcessError as e:
-            comment_on_issue(repo, issue_number, f"❌ Pre-build failed: {e}", github_token)
-            return False
+
+        # Try gradle build with retry on cache corruption
+        max_retries = 2
+        for attempt in range(max_retries):
+            try:
+                # Use --no-daemon to avoid daemon-related cache issues
+                run_command(["./gradlew", "build", "--no-daemon"], cwd=repo_dir)
+                comment_on_issue(repo, issue_number,
+                    "🔨 Pre-build completed. Docker will use pre-built artifacts.", github_token)
+                return True
+            except subprocess.CalledProcessError as e:
+                error_msg = str(e)
+                # Check if it's a cache corruption issue
+                if "workspace metadata" in error_msg or "metadata.bin" in error_msg:
+                    if attempt < max_retries - 1:
+                        print(f"⚠️ Gradle cache corruption detected. Cleaning and retrying... (attempt {attempt + 1}/{max_retries})")
+                        comment_on_issue(repo, issue_number,
+                            "⚠️ Gradle cache issue detected. Cleaning cache and retrying...", github_token)
+                        # Clean the specific gradle project cache
+                        try:
+                            run_command(["./gradlew", "clean", "--no-daemon"], cwd=repo_dir)
+                        except:
+                            pass
+                    else:
+                        comment_on_issue(repo, issue_number,
+                            f"❌ Pre-build failed after {max_retries} attempts due to Gradle cache corruption. Please clear your Gradle cache: `rm -rf ~/.gradle/caches`", github_token)
+                        return False
+                else:
+                    comment_on_issue(repo, issue_number, f"❌ Pre-build failed: {e}", github_token)
+                    return False
+
+        return False
     else:
         # Modern mode: Self-contained Dockerfile handles everything
         comment_on_issue(repo, issue_number,
