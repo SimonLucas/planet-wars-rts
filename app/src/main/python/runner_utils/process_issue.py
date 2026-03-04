@@ -316,8 +316,9 @@ def run_evaluation(port: int, github_token: str, issue_number: int, timeout_seco
     comment_on_issue(repo, issue_number, f"🎮 Running evaluation matches...", github_token)
 
     try:
+        # Use --no-daemon to avoid gradle cache corruption issues
         subprocess.run(
-            ["./gradlew", "runEvaluation", f"--args={port}"],
+            ["./gradlew", "runEvaluation", f"--args={port}", "--no-daemon"],
             cwd=KOTLIN_PROJECT_PATH,
             check=True,
             timeout=timeout_seconds,
