@@ -81,4 +81,4 @@ to support reproducibility and future research.
 ## Terms and Conditions
 
 By submitting an entry, you agree to the competition
-[Terms and Conditions](./competition_terms.md).
+[Terms and Conditions](https://github.com/SimonLucas/planet-wars-rts/blob/main/competitions/competition_terms.md).
