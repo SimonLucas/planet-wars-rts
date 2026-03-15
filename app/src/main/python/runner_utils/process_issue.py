@@ -263,15 +263,54 @@ def clone_and_build_repo(agent: AgentEntry, base_dir: Path, github_token: str, i
         authenticated_url = urlunparse(parsed._replace(netloc=authenticated_netloc))
 
         try:
-            run_command(["git", "clone", authenticated_url, str(repo_dir)])
+            run_command(["git", "clone", authenticated_url, str(repo_dir)], timeout=60)
             comment_on_issue(repo, issue_number, "📦 Repository cloned.", github_token)
+        except subprocess.TimeoutExpired as e:
+            comment_on_issue(repo, issue_number, f"⏱️ Clone timed out after 60s: {e}", github_token)
+            return None
         except subprocess.CalledProcessError as e:
             comment_on_issue(repo, issue_number, f"❌ Clone failed: {e}", github_token)
             return None
 
     if agent.commit:
-        run_command(["git", "checkout", agent.commit], cwd=repo_dir)
-        comment_on_issue(repo, issue_number, f"📌 Checked out commit `{agent.commit}`", github_token)
+        # First check if the commit exists locally
+        commit_exists_locally = False
+        try:
+            result = subprocess.run(
+                ["git", "cat-file", "-e", agent.commit],
+                cwd=repo_dir, capture_output=True, timeout=5
+            )
+            commit_exists_locally = (result.returncode == 0)
+            if commit_exists_locally:
+                print(f"✅ Commit {agent.commit[:8]} exists in local repo")
+        except Exception:
+            commit_exists_locally = False
+
+        # Try to checkout from local repo if commit exists
+        checkout_success = False
+        if commit_exists_locally:
+            try:
+                run_command(["git", "checkout", agent.commit], cwd=repo_dir, timeout=30)
+                comment_on_issue(repo, issue_number, f"📌 Checked out commit `{agent.commit[:8]}` (from local repo)", github_token)
+                checkout_success = True
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+                print(f"⚠️ Local checkout failed: {e}")
+
+        # If not successful, try fetching with timeout
+        if not checkout_success:
+            try:
+                print(f"⚙️ Fetching from origin (timeout: 30s)...")
+                run_command(["git", "fetch", "origin"], cwd=repo_dir, timeout=30)
+                run_command(["git", "checkout", agent.commit], cwd=repo_dir, timeout=30)
+                comment_on_issue(repo, issue_number, f"📌 Checked out commit `{agent.commit[:8]}`", github_token)
+            except subprocess.TimeoutExpired as e:
+                comment_on_issue(repo, issue_number, f"❌ Git fetch timed out after 30s. Cannot get commit `{agent.commit[:8]}`", github_token)
+                print(f"❌ Git fetch timed out for {agent.commit[:8]}")
+                return None
+            except subprocess.CalledProcessError as e:
+                comment_on_issue(repo, issue_number, f"❌ Git fetch/checkout failed for commit `{agent.commit[:8]}`", github_token)
+                print(f"❌ Git fetch/checkout failed: {e}")
+                return None
 
     # Detect and build based on project type
     print("=" * 60)

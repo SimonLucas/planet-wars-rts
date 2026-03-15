@@ -32,9 +32,13 @@ def robust_clone_and_build(agent: AgentEntry, base_dir: Path, github_token: str)
     def do_clone(retries: int = 2) -> bool:
         for attempt in range(retries):
             try:
-                run_command(["git", "clone", authenticated_url, str(repo_dir)])
+                run_command(["git", "clone", authenticated_url, str(repo_dir)], timeout=60)
                 print(f"📦 Cloned {agent.repo_url} into {repo_dir}")
                 return True
+            except subprocess.TimeoutExpired as e:
+                print(f"⏱️ Clone timed out for {agent.id} (attempt {attempt + 1}): {e}")
+                if attempt < retries - 1:
+                    time.sleep(1.5)  # brief delay before retry
             except subprocess.CalledProcessError as e:
                 print(f"❌ Clone failed for {agent.id} (attempt {attempt + 1}): {e}")
                 if attempt < retries - 1:
@@ -48,22 +52,49 @@ def robust_clone_and_build(agent: AgentEntry, base_dir: Path, github_token: str)
 
     # Attempt commit checkout
     if agent.commit:
+        # First check if the commit exists locally
+        commit_exists_locally = False
         try:
-            run_command(["git", "fetch", "origin"], cwd=repo_dir)
-            run_command(["git", "checkout", agent.commit], cwd=repo_dir)
-            print(f"📌 Checked out commit {agent.commit}")
-        except subprocess.CalledProcessError as e:
-            print(f"⚠️ Checkout failed — cleaning repo and retrying clone: {e}")
-            shutil.rmtree(repo_dir)
-            if not do_clone():
-                return None
+            result = subprocess.run(
+                ["git", "cat-file", "-e", agent.commit],
+                cwd=repo_dir, capture_output=True, timeout=5
+            )
+            commit_exists_locally = (result.returncode == 0)
+            if commit_exists_locally:
+                print(f"✅ Commit {agent.commit[:8]} exists in local repo")
+        except Exception:
+            commit_exists_locally = False
+
+        # Try to checkout from local repo if commit exists
+        checkout_success = False
+        if commit_exists_locally:
             try:
-                run_command(["git", "fetch", "origin"], cwd=repo_dir)
-                run_command(["git", "checkout", agent.commit], cwd=repo_dir)
-                print(f"📌 Retried and checked out commit {agent.commit}")
-            except subprocess.CalledProcessError as e:
-                print(f"❌ Retry checkout failed for {agent.id}: {e}")
+                run_command(["git", "checkout", agent.commit], cwd=repo_dir, timeout=30)
+                print(f"📌 Checked out commit {agent.commit[:8]} (from local repo)")
+                checkout_success = True
+            except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+                print(f"⚠️ Local checkout failed: {e}")
+
+        # If not successful, try fetching with timeout
+        if not checkout_success:
+            try:
+                print(f"⚙️ Fetching from origin (timeout: 30s)...")
+                run_command(["git", "fetch", "origin"], cwd=repo_dir, timeout=30)
+                run_command(["git", "checkout", agent.commit], cwd=repo_dir, timeout=30)
+                print(f"📌 Checked out commit {agent.commit[:8]}")
+                checkout_success = True
+            except subprocess.TimeoutExpired as e:
+                print(f"❌ Git fetch timed out after 30s: {e}")
+                print(f"❌ Cannot get commit {agent.commit[:8]} - skipping this agent")
                 return None
+            except subprocess.CalledProcessError as e:
+                print(f"❌ Git fetch/checkout failed: {e}")
+                print(f"❌ Cannot get commit {agent.commit[:8]} - skipping this agent")
+                return None
+
+        if not checkout_success:
+            print(f"❌ Failed to checkout requested commit {agent.commit[:8]}")
+            return None
 
     # Ensure gradlew exists
     if not gradlew_path.exists():

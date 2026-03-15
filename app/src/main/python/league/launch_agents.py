@@ -157,16 +157,48 @@ def stage1_clone_repo(a: Agent, github_token: str) -> Path:
     authenticated = parsed._replace(netloc=f"{quote(github_token)}@{parsed.netloc}")
     clone_url = urlunparse(authenticated)
 
-    print(f"📥 Cloning {a.repo_url} -> {repo_dir}")
-    run_command(["git", "clone", clone_url, str(repo_dir)])
+    print(f"📥 Cloning {a.repo_url} -> {repo_dir} (timeout: 60s)")
+    run_command(["git", "clone", clone_url, str(repo_dir)], timeout=60)
     return repo_dir
 
 
 # ---------- Stage 2: Checkout commit ----------
 def stage2_checkout_commit(a: Agent, repo_dir: Path) -> None:
-    print(f"📌 Checking out {a.commit} in {repo_dir.name}")
-    run_command(["git", "fetch", "--all"], cwd=repo_dir)
-    run_command(["git", "checkout", a.commit], cwd=repo_dir)
+    print(f"📌 Checking out {a.commit[:8]} in {repo_dir.name}")
+
+    # First check if the commit exists locally
+    commit_exists_locally = False
+    try:
+        result = subprocess.run(
+            ["git", "cat-file", "-e", a.commit],
+            cwd=repo_dir, capture_output=True, timeout=5
+        )
+        commit_exists_locally = (result.returncode == 0)
+        if commit_exists_locally:
+            print(f"✅ Commit {a.commit[:8]} exists in local repo")
+    except Exception:
+        commit_exists_locally = False
+
+    # Try to checkout from local repo if commit exists
+    checkout_success = False
+    if commit_exists_locally:
+        try:
+            run_command(["git", "checkout", a.commit], cwd=repo_dir, timeout=30)
+            print(f"📌 Checked out {a.commit[:8]} (from local repo)")
+            return
+        except (subprocess.CalledProcessError, subprocess.TimeoutExpired) as e:
+            print(f"⚠️ Local checkout failed: {e}")
+
+    # If not successful, try fetching with timeout
+    try:
+        print(f"⚙️ Fetching from origin (timeout: 30s)...")
+        run_command(["git", "fetch", "--all"], cwd=repo_dir, timeout=30)
+        run_command(["git", "checkout", a.commit], cwd=repo_dir, timeout=30)
+        print(f"📌 Checked out {a.commit[:8]}")
+    except subprocess.TimeoutExpired as e:
+        raise RuntimeError(f"Git fetch timed out after 30s: {e}. Cannot get commit {a.commit[:8]}")
+    except subprocess.CalledProcessError as e:
+        raise RuntimeError(f"Git fetch/checkout failed: {e}. Cannot get commit {a.commit[:8]}")
 
 
 # ---------- Stage 3: Build on host if needed ----------
