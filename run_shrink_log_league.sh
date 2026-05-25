@@ -41,6 +41,6 @@ for i in $(seq "$N"); do
   # and once more at the end of the loop for good measure
   shrink_logs
 
-  echo "Sleeping for 1 hour..."
-  sleep 1h
+  echo "Sleeping for 4 hours..."
+  sleep 4h
 done

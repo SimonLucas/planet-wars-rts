@@ -1,12 +1,12 @@
-### Dynamic RHEA Phase-Aware Agent v2 (Remote) Evaluation
+### MCTS Agent V2 (Remote) Evaluation
 
 | Opponent | Win Rate % | Games Played |
 |----------|------------|---------------|
-| Pure Random Agent | 100.0 | 10 |
-| Better Random Agent | 100.0 | 10 |
-| Careful Random Agent | 90.0 | 10 |
-| Greedy Heuristic Agent | 30.0 | 10 |
-| EvoAgent-200-20-0.5-true | 60.0 | 10 |
-| **Overall Average** | **76.0** | **50** |
+| Careful Random Agent | 83.3 | 6 |
+| Greedy Heuristic Agent | 100.0 | 6 |
+| **Overall Average** | **91.7** | **12** |
 
-AVG=76.0
+AVG=91.7
+Average Action Time: 42.12 ms
+
+Total Timeouts: 0
