@@ -12,6 +12,7 @@ fun main() {
     val gameState = GameStateFactory(gameParams).createGame()
     val agent1 = CarefulRandomAgent()
     val agent2 = BetterRandomAgent()
+
     // sub in different agents as needed
 //    val agent1 = PureRandomAgent()
     val gameRunner = GameRunner(agent1, agent2, gameParams)
