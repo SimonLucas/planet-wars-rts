@@ -25,6 +25,9 @@ for i in $(seq "$N"); do
   # pre-emptively trim logs at the start of each iteration
   shrink_logs
 
+  python -m league.process_completed_submissions
+  python -m league.launch_agents
+
   # can also use league.run_agents_uniform
   python3 -m league.run_agents_trueskill
   echo "Elapsed: ${SECONDS}s"
@@ -35,8 +38,6 @@ for i in $(seq "$N"); do
   python -m league.league_ratings --reset --order time
   python -m league.export_leaderboard_md
   python -m league.commit_leaderboard_to_git
-  python -m league.process_completed_submissions
-  python -m league.launch_agents
 
   # and once more at the end of the loop for good measure
   shrink_logs
