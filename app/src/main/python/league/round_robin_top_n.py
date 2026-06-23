@@ -164,7 +164,7 @@ def build_markdown(
     lines: list[str] = []
     lines.append(f"# Round-Robin Win Rates — {league_name} (Top {n})")
     lines.append("")
-    lines.append("_Cell shows **row agent's win rate** vs column agent (games played in brackets)._")
+    lines.append("_Cell shows **row agent's win rate** vs column agent (games played in brackets). Overall = mean of per-opponent win rates (each opponent weighted equally)._")
     lines.append("")
 
     # Header row: truncate long names for column headers
@@ -177,7 +177,7 @@ def build_markdown(
 
     for i, agent in enumerate(agents):
         aid = ids[i]
-        row_wins = row_games = 0
+        opp_win_rates: list[float] = []
         cells: list[str] = []
         for j, opp in enumerate(agents):
             oid = ids[j]
@@ -185,15 +185,14 @@ def build_markdown(
                 cells.append("—")
                 continue
             wins, games = h2h.get((aid, oid), (0, 0))
-            row_wins += wins
-            row_games += games
             if games == 0:
                 cells.append("n/a")
             else:
                 wr = 100.0 * wins / games
+                opp_win_rates.append(wr)
                 cells.append(f"{wr:.1f}% ({games})")
 
-        overall = f"{100.0 * row_wins / row_games:.1f}%" if row_games > 0 else "n/a"
+        overall = f"{sum(opp_win_rates) / len(opp_win_rates):.1f}%" if opp_win_rates else "n/a"
         cell_str = " | ".join(cells)
         rating_str = f"{agent['conservative']:.1f}"
         lines.append(f"| **{agent['name']}** (μ−3σ={rating_str}) | {cell_str} | **{overall}** |")
