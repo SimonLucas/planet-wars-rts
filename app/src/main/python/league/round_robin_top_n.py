@@ -80,6 +80,42 @@ def fetch_top_agents(
     return results
 
 
+def fetch_agents_by_name(
+    session: Session,
+    league_id: int,
+    names: list[str],
+) -> list[dict]:
+    """Return agents matching the given names, ordered by conservative rating.
+
+    Agents are looked up from the Agent table (no league dependency).
+    Ratings are fetched for the specified league; agents without a rating in
+    that league fall back to defaults (mu0=25, sigma0=8.333).
+    """
+    agents = session.query(Agent).filter(Agent.name.in_(names)).all()
+    found = {a.name for a in agents}
+    missing = set(names) - found
+    if missing:
+        raise SystemExit(f"Agents not found: {', '.join(sorted(missing))}")
+
+    MU0, SIGMA0 = 25.0, 25.0 / 3.0
+    results = []
+    for a in agents:
+        r = session.get(Rating, {"agent_id": a.agent_id, "league_id": league_id})
+        mu = float(r.mu) if r else MU0
+        sigma = float(r.sigma) if r else SIGMA0
+        results.append({
+            "agent_id": a.agent_id,
+            "name": a.name,
+            "family": extract_family(a.name),
+            "mu": mu,
+            "sigma": sigma,
+            "conservative": mu - 3.0 * sigma,
+        })
+
+    results.sort(key=lambda x: x["conservative"], reverse=True)
+    return results
+
+
 def compute_head_to_head(
     session: Session,
     league_id: int,
@@ -92,7 +128,6 @@ def compute_head_to_head(
     id_set = set(agent_ids)
     rows = session.execute(
         select(Match.player1_id, Match.player2_id, Match.winner_id)
-        .where(Match.league_id == league_id)
         .where(Match.player1_id.in_(id_set))
         .where(Match.player2_id.in_(id_set))
     ).all()
@@ -182,6 +217,7 @@ def main() -> None:
     ap.add_argument("--db", default=None, help="SQLAlchemy DB URL (default: league default path)")
     ap.add_argument("--league", type=int, default=LEAGUE_ID, help=f"League ID (default: {LEAGUE_ID})")
     ap.add_argument("--top-n", type=int, default=5, help="Number of top agents to include (default: 5)")
+    ap.add_argument("--names", type=str, default=None, help="Comma-separated list of exact agent names to include (overrides --top-n)")
     ap.add_argument("--out", type=str, default=None, help="Output .md file path (default: stdout)")
     ap.add_argument(
         "--distinct", dest="distinct", action="store_true", default=True,
@@ -200,7 +236,11 @@ def main() -> None:
         league = session.get(League, args.league)
         league_name = league.name if league else f"League {args.league}"
 
-        agents = fetch_top_agents(session, args.league, args.top_n, distinct=args.distinct)
+        if args.names:
+            name_list = [n.strip() for n in args.names.split(",") if n.strip()]
+            agents = fetch_agents_by_name(session, args.league, name_list)
+        else:
+            agents = fetch_top_agents(session, args.league, args.top_n, distinct=args.distinct)
         if not agents:
             print("No agents found — check league ID and ratings table.")
             return
