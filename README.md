@@ -236,3 +236,4 @@ For competitions we aim to run sufficient games
 to arrive at a stable rank order of the agents.
 
 
+PYTHONPATH=app/src/main/python python app/src/main/python/examples/local_python_battle.py
