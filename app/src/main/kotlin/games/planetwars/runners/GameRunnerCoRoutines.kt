@@ -14,9 +14,10 @@ data class GameRunnerCoRoutines(
     val agent2: PlanetWarsAgent,
     val gameParams: GameParams,
     val timeoutMillis: Long = 500, // Timeout for agent responses
+    val failedActionHandler: ((FailedActionEvent) -> Unit)? = null,
 ) {
     var gameState: GameState = GameStateFactory(gameParams).createGame()
-    var forwardModel: ForwardModel = ForwardModel(gameState.deepCopy(), gameParams)
+    var forwardModel: ForwardModel = ForwardModel(gameState.deepCopy(), gameParams, failedActionHandler)
 
     // Stores the latest actions from agents, even if computed late
     private var latestAction1: Action = Action.doNothing()
@@ -34,7 +35,7 @@ data class GameRunnerCoRoutines(
         }
         agent1.prepareToPlayAs(Player.Player1, gameParams)
         agent2.prepareToPlayAs(Player.Player2, gameParams)
-        forwardModel = ForwardModel(gameState.deepCopy(), gameParams)
+        forwardModel = ForwardModel(gameState.deepCopy(), gameParams, failedActionHandler)
         runBlocking {
             while (!forwardModel.isTerminal()) {
                 val actions = getTimedActions(forwardModel.state)
@@ -88,7 +89,7 @@ data class GameRunnerCoRoutines(
     }
 
     fun newGame() {
-        forwardModel = ForwardModel(gameState.deepCopy(), gameParams)
+        forwardModel = ForwardModel(gameState.deepCopy(), gameParams, failedActionHandler)
     }
 
     fun stepGame(): ForwardModel {

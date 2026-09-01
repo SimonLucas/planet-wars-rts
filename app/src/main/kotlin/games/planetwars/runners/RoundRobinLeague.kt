@@ -85,16 +85,30 @@ data class RoundRobinLeague(
     val gameParams: GameParams = GameParams(numPlanets = 20),
     val runRemoteAgents: Boolean = false, // if true, will run remote agents
     val timeout: Long = 50, // timeout in milliseconds for remote agents
+    val failedActionAuditLogger: FailedActionAuditLogger = FailedActionAuditLogger(),
 ) {
-    fun runPair(agent1: PlanetWarsAgent, agent2: PlanetWarsAgent): Triple<Map<Player, Int>, Map<Player, Double>, Map<Player, Int>> {
+    fun runPair(
+        agent1: PlanetWarsAgent,
+        agent2: PlanetWarsAgent,
+        agent1Name: String,
+        agent2Name: String
+    ): Triple<Map<Player, Int>, Map<Player, Double>, Map<Player, Int>> {
+        val failedActionHandler: (games.planetwars.core.FailedActionEvent) -> Unit = { event ->
+            val agentName = if (event.player == Player.Player1) agent1Name else agent2Name
+            val opponentName = if (event.player == Player.Player1) agent2Name else agent1Name
+            failedActionAuditLogger.log(agentName, opponentName, event)
+        }
         if (runRemoteAgents) {
-            val gameRunner = GameRunnerCoRoutines(agent1, agent2, gameParams, timeoutMillis = timeout)
+            val gameRunner = GameRunnerCoRoutines(
+                agent1, agent2, gameParams, timeoutMillis = timeout,
+                failedActionHandler = failedActionHandler
+            )
             val scores = gameRunner.runGames(gamesPerPair)
             val avgTimes = gameRunner.getAverageActionTimes()
             val timeouts = gameRunner.getTimeoutCount()
             return Triple(scores, avgTimes, timeouts)
         } else {
-            val gameRunner = GameRunner(agent1, agent2, gameParams)
+            val gameRunner = GameRunner(agent1, agent2, gameParams, failedActionHandler)
 
             val avgTimes = mapOf(
                 Player.Player1 to 0.0,
@@ -129,7 +143,7 @@ data class RoundRobinLeague(
                 val type1 = agentTypes[i]
                 val type2 = agentTypes[j]
                 println("Running $type1 vs $type2... ")
-                val result = runPair(agent1, agent2)
+                val result = runPair(agent1, agent2, type1, type2)
                 // update the league scores for each agent
                 val leagueEntry1 = scores[type1]!!
                 val leagueEntry2 = scores[type2]!!

@@ -9,9 +9,10 @@ data class GameRunner(
     val agent1: PlanetWarsAgent,
     val agent2: PlanetWarsAgent,
     val gameParams: GameParams,
+    val failedActionHandler: ((FailedActionEvent) -> Unit)? = null,
 ) {
     var gameState: GameState = GameStateFactory(gameParams).createGame()
-    var forwardModel: ForwardModel = ForwardModel(gameState.deepCopy(), gameParams)
+    var forwardModel: ForwardModel = ForwardModel(gameState.deepCopy(), gameParams, failedActionHandler)
     // call newGame() to reset the game state and agents in the constructor
     init {
         newGame()
@@ -36,7 +37,7 @@ data class GameRunner(
         if (gameParams.newMapEachRun) {
             gameState = GameStateFactory(gameParams).createGame()
         }
-        forwardModel = ForwardModel(gameState.deepCopy(), gameParams)
+        forwardModel = ForwardModel(gameState.deepCopy(), gameParams, failedActionHandler)
         agent1.prepareToPlayAs(Player.Player1, gameParams)
         agent2.prepareToPlayAs(Player.Player2, gameParams)
     }

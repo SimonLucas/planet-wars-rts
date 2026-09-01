@@ -1,3 +1,4 @@
+import math
 from typing import Dict, Optional
 from core.game_state import GameState, GameParams, Player, Action, Planet, Transporter, Vec2d
 
@@ -22,6 +23,11 @@ class ForwardModel:
     def apply_actions(self, actions: Dict[Player, Action]):
         for player, action in actions.items():
             if action == Action.DO_NOTHING:
+                continue
+            if not (0 <= action.source_planet_id < len(self.state.planets)) or \
+                    not (0 <= action.destination_planet_id < len(self.state.planets)) or \
+                    not math.isfinite(action.num_ships) or action.num_ships <= 0.0:
+                ForwardModel.n_failed_actions += 1
                 continue
             source = self.state.planets[action.source_planet_id]
             target = self.state.planets[action.destination_planet_id]

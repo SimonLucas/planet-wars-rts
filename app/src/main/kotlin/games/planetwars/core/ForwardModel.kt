@@ -2,7 +2,11 @@ package games.planetwars.core
 
 import games.planetwars.agents.Action
 
-class ForwardModel(val state: GameState, val params: GameParams) {
+class ForwardModel(
+    val state: GameState,
+    val params: GameParams,
+    private val failedActionHandler: ((FailedActionEvent) -> Unit)? = null
+) {
     // the forward model applies the current set of actions to the current game state
     // and updates the game state in place
     // keep track of the total number of calls to the model across all instances
@@ -31,6 +35,18 @@ class ForwardModel(val state: GameState, val params: GameParams) {
             if (action == Action.DO_NOTHING) {
                 continue
             }
+            if (action.sourcePlanetId !in state.planets.indices ||
+                action.destinationPlanetId !in state.planets.indices ||
+                !action.numShips.isFinite() || action.numShips <= 0.0
+            ) {
+                rejectAction(player, action, when {
+                    action.sourcePlanetId !in state.planets.indices -> "invalid_source_planet"
+                    action.destinationPlanetId !in state.planets.indices -> "invalid_destination_planet"
+                    !action.numShips.isFinite() -> "non_finite_ship_count"
+                    else -> "non_positive_ship_count"
+                })
+                continue
+            }
             val source = state.planets[action.sourcePlanetId]
             val target = state.planets[action.destinationPlanetId]
             if (source.transporter == null && source.owner == player && source.nShips >= action.numShips) {
@@ -44,9 +60,18 @@ class ForwardModel(val state: GameState, val params: GameParams) {
                 source.transporter = transporter
                 nActions += 1
             } else {
-                nFailedActions += 1
+                rejectAction(player, action, when {
+                    source.owner != player -> "source_not_owned"
+                    source.transporter != null -> "transporter_already_active"
+                    else -> "insufficient_ships"
+                })
             }
         }
+    }
+
+    private fun rejectAction(player: Player, action: Action, reason: String) {
+        nFailedActions += 1
+        failedActionHandler?.invoke(FailedActionEvent(state.gameTick, player, action, reason))
     }
 
     fun isTerminal(): Boolean {
@@ -178,4 +203,3 @@ fun main() {
     val dt = System.currentTimeMillis() - t
     println("Time per step: ${dt.toDouble() / ForwardModel.nUpdates} ms")
 }
-
