@@ -26,22 +26,28 @@ def robust_clone_and_build(agent: AgentEntry, base_dir: Path, github_token: str)
 
     # Prepare authenticated clone URL
     parsed = urlparse(agent.repo_url)
-    authenticated_netloc = f"{quote(github_token)}@{parsed.netloc}"
-    authenticated_url = str(urlunparse(parsed._replace(netloc=authenticated_netloc)))
+    authenticated_url = None
+    if parsed.scheme in ("http", "https") and parsed.netloc:
+        authenticated_netloc = f"x-access-token:{quote(github_token)}@{parsed.netloc}"
+        authenticated_url = str(urlunparse(parsed._replace(netloc=authenticated_netloc)))
 
     def do_clone(retries: int = 2) -> bool:
-        for attempt in range(retries):
+        clone_urls = [agent.repo_url]
+        if github_token and authenticated_url:
+            clone_urls.append(authenticated_url)
+
+        for attempt, clone_url in enumerate(clone_urls[:retries]):
             try:
-                run_command(["git", "clone", authenticated_url, str(repo_dir)], timeout=60)
+                run_command(["git", "clone", clone_url, str(repo_dir)], timeout=60)
                 print(f"📦 Cloned {agent.repo_url} into {repo_dir}")
                 return True
-            except subprocess.TimeoutExpired as e:
-                print(f"⏱️ Clone timed out for {agent.id} (attempt {attempt + 1}): {e}")
-                if attempt < retries - 1:
+            except subprocess.TimeoutExpired:
+                print(f"⏱️ Clone timed out for {agent.id} (attempt {attempt + 1})")
+                if attempt < len(clone_urls[:retries]) - 1:
                     time.sleep(1.5)  # brief delay before retry
-            except subprocess.CalledProcessError as e:
-                print(f"❌ Clone failed for {agent.id} (attempt {attempt + 1}): {e}")
-                if attempt < retries - 1:
+            except subprocess.CalledProcessError:
+                print(f"❌ Clone failed for {agent.id} (attempt {attempt + 1})")
+                if attempt < len(clone_urls[:retries]) - 1:
                     time.sleep(1.5)  # brief delay before retry
         return False
 
@@ -96,24 +102,25 @@ def robust_clone_and_build(agent: AgentEntry, base_dir: Path, github_token: str)
             print(f"❌ Failed to checkout requested commit {agent.commit[:8]}")
             return None
 
-    # Ensure gradlew exists
-    if not gradlew_path.exists():
-        print(f"❌ Gradle wrapper not found in {repo_dir}")
-        return None
-
-    gradlew_path.chmod(gradlew_path.stat().st_mode | 0o111)
-    try:
-        # Use Java 22 for building to avoid Kotlin compatibility issues with newer Java versions
-        import os
-        build_env = os.environ.copy()
-        java_22_home = "/Users/eex250/Library/Java/JavaVirtualMachines/corretto-22.0.2/Contents/Home"
-        if Path(java_22_home).exists():
-            build_env["JAVA_HOME"] = java_22_home
-            print(f"🔧 Using Java 22 for build (JAVA_HOME={java_22_home})")
-        run_command(["./gradlew", "build"], cwd=repo_dir, env=build_env)
-        print(f"🔨 Build succeeded for {agent.id}")
-    except subprocess.CalledProcessError as e:
-        print(f"❌ Build failed for {agent.id}: {e}")
+    if gradlew_path.exists():
+        gradlew_path.chmod(gradlew_path.stat().st_mode | 0o111)
+        try:
+            # Use Java 22 for building to avoid Kotlin compatibility issues with newer Java versions
+            import os
+            build_env = os.environ.copy()
+            java_22_home = "/Users/eex250/Library/Java/JavaVirtualMachines/corretto-22.0.2/Contents/Home"
+            if Path(java_22_home).exists():
+                build_env["JAVA_HOME"] = java_22_home
+                print(f"🔧 Using Java 22 for build (JAVA_HOME={java_22_home})")
+            run_command(["./gradlew", "build"], cwd=repo_dir, env=build_env)
+            print(f"🔨 Build succeeded for {agent.id}")
+        except subprocess.CalledProcessError as e:
+            print(f"❌ Build failed for {agent.id}: {e}")
+            return None
+    elif (repo_dir / "Dockerfile").exists() or (repo_dir / "Containerfile").exists():
+        print(f"📦 No host build required for container-native agent {agent.id}")
+    else:
+        print(f"❌ No Gradle wrapper, Dockerfile, or Containerfile found in {repo_dir}")
         return None
 
     return repo_dir

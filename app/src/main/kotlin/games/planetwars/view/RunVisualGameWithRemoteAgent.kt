@@ -10,10 +10,11 @@ import xkg.jvm.AppLauncher
 fun main() {
     val gameParams = GameParams(numPlanets = 20, maxTicks = 1000)
     val gameState = GameStateFactory(gameParams).createGame()
-    val agent1 = CarefulRandomAgent()
+//    val agent1 = CarefulRandomAgent()
     // Use a remote agent that connects to a game agent server running on a specified port
     // Be sure to start the server first
-    val agent2 = RemoteAgent("<specified by remote server>", port = 8090)
+    val agent1 = RemoteAgent("<specified by remote server>", port = 5001)
+    val agent2 = RemoteAgent("<specified by remote server>", port = 5002)
     val gameRunner = GameRunner(agent1, agent2, gameParams)
 
     val title = "${agent1.getAgentType()} : Planet Wars : ${agent2.getAgentType()}"
