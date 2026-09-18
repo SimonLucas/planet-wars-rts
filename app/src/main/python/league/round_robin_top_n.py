@@ -128,6 +128,7 @@ def compute_head_to_head(
     id_set = set(agent_ids)
     rows = session.execute(
         select(Match.player1_id, Match.player2_id, Match.winner_id)
+        .where(Match.league_id == league_id)
         .where(Match.player1_id.in_(id_set))
         .where(Match.player2_id.in_(id_set))
     ).all()
